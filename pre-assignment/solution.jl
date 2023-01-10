@@ -147,7 +147,7 @@ function run_c()
 
     t_plot = 1:1000
 
-    plot((@view ps[t_plot]); label="Simulated")
+    plot(t_plot, (@view ps[t_plot]); label="Simulated")
 
     model(t, (c, a, b)) = @. c * t^(-a) * exp(-b / t)
 
@@ -200,9 +200,9 @@ function run_d()
     cs = make_counts(ts, max_steps)
     ps = make_prob_dist(cs, n_simulations)
 
-    t_plot = 1:1000
+    t_plot = 1:200
 
-    plot((@view ps[t_plot]); label="Simulated", leg=:topright)
+    plot(t_plot, (@view ps[t_plot]); label="Simulated", leg=:topright)
 
     model(t, (a1, a2, a3, b, c1, c2, c3, d)) =
         @. (c1 * t^-a1 + c2 * t^-a2 + c3 * t^-a3) * exp(-b * t / d - d / t)
