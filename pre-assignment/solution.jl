@@ -188,7 +188,7 @@ function simulate_n_double_crossings(dist, a, max_steps, n)
 end
 
 function run_d()
-    max_steps = 10000
+    max_steps = 5000
     n_simulations = 100_000_000
     a = 10
 
@@ -198,21 +198,22 @@ function run_d()
     cs = make_counts(ts, max_steps)
     ps = make_prob_dist(cs, n_simulations)
 
-    t_plot = 20:10000
+    t_plot = 1:1000
 
-    plot((@view ps[t_plot]); label="Simulated", xscale=:log10, yscale=:log10)
+    plot((@view ps[t_plot]); label="Simulated", leg=:topright)
 
-    # model(t, (c, a, b)) = @. c * t^(-a) * exp(-b / t)
+    model(t, (a1, a2, b, c1, c2, d)) =
+        @. (c1 * t^-a1 + c2 * t^-a2) * exp(-b * t / d - d / t)
 
-    # p0 = [24.0, 1.7, 200.0]
+    p0 = [1.5, 0.0, 1.0, 60.0, 0.0, 300.0]
 
-    # fit = curve_fit(
-    #     model, collect(eachindex(ps)), ps, p0;
-    #     autodiff=:forwarddiff
-    # )
+    fit = curve_fit(
+        model, collect(eachindex(ps)), ps, p0;
+        autodiff=:forwarddiff
+    )
 
-    # param = fit.param .± stderror(fit)
-    # @show param
+    param = fit.param .± stderror(fit)
+    @show param
 
-    # plot!(t_plot, model(t_plot, fit.param); label="Fit")
+    plot!(t_plot, model(t_plot, fit.param); label="Fit")
 end
