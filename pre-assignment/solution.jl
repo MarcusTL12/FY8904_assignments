@@ -138,7 +138,8 @@ function run_c()
     n_simulations = 100_000_000
     a = 10
 
-    dist = () -> rand() * 2 - 1
+    # dist = () -> rand() * 2 - 1
+    dist = randn
 
     ts = simulate_n_crossings(dist, a, max_steps, n_simulations)
     cs = make_counts(ts, max_steps)
@@ -158,7 +159,7 @@ function run_c()
     )
 
     param = fit.param .± stderror(fit)
-    @show param
+    display(param)
 
     plot!(t_plot, model(t_plot, fit.param); label="Fit")
 end
@@ -192,7 +193,8 @@ function run_d()
     n_simulations = 100_000_000
     a = 10
 
-    dist = () -> rand() * 2 - 1
+    # dist = () -> rand() * 2 - 1
+    dist = randn
 
     ts = simulate_n_double_crossings(dist, a, max_steps, n_simulations)
     cs = make_counts(ts, max_steps)
@@ -202,10 +204,10 @@ function run_d()
 
     plot((@view ps[t_plot]); label="Simulated", leg=:topright)
 
-    model(t, (a1, a2, b, c1, c2, d)) =
-        @. (c1 * t^-a1 + c2 * t^-a2) * exp(-b * t / d - d / t)
+    model(t, (a1, a2, a3, b, c1, c2, c3, d)) =
+        @. (c1 * t^-a1 + c2 * t^-a2 + c3 * t^-a3) * exp(-b * t / d - d / t)
 
-    p0 = [1.5, 0.0, 1.0, 60.0, 0.0, 300.0]
+    p0 = [1.5, 0.1, -0.1, 1.0, 60.0, 0.0, 0.0, 300.0]
 
     fit = curve_fit(
         model, collect(eachindex(ps)), ps, p0;
@@ -213,7 +215,7 @@ function run_d()
     )
 
     param = fit.param .± stderror(fit)
-    @show param
+    display(param)
 
     plot!(t_plot, model(t_plot, fit.param); label="Fit")
 end
