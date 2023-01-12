@@ -118,17 +118,23 @@ function find_first_collision(ps, vs, rs)
 end
 
 function find_first_collision_threaded(ps, vs, rs)
-    min_inds = [(0, 0) for _ in 1:Threads.nthreads()]
-    min_t = [NaN for _ in 1:Threads.nthreads()]
+    nth = Threads.nthreads()
 
-    Threads.@threads for i in axes(ps, 1)
-        j, t = @inline find_first_collision_single(ps, vs, rs, i)
+    min_inds = [(0, 0) for _ in 1:nth]
+    min_t = [NaN for _ in 1:nth]
 
-        thid = Threads.threadid()
+    Threads.@threads for id in 1:nth
+        for i in id:nth:size(ps, 1)
+            j, t = @inline find_first_collision_single_simd(
+                ps, vs, rs, i,
+                Vec{8,Float64}
+            )
+            # j, t = @inline find_first_collision_single(ps, vs, rs, i)
 
-        if t > 0 && !(min_t[thid] < t)
-            min_inds[thid] = (i, j)
-            min_t[thid] = t
+            if t > 0 && !(min_t[id] < t)
+                min_inds[id] = (i, j)
+                min_t[id] = t
+            end
         end
     end
 
