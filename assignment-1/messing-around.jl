@@ -7,11 +7,15 @@ function find_intersection_time(p1x, p1y, p2x, p2y, v1x, v1y, v2x, v2y, r1, r2)
     Δvx = v2x - v1x
     Δvy = v2y - v1y
 
-    a = Δvx^2 + Δvy^2
-    b = Δpx * Δvx + Δpy * Δvy
-    c = Δpx^2 + Δpy^2 - (r1 + r2)^2
+    @fastmath begin
+        a = Δvx^2 + Δvy^2
+        b = Δpx * Δvx + Δpy * Δvy
+        # c = Δpx^2 + Δpy^2 - (r1 + r2)^2
+        d = r1 + r2
+        c = Δpx^2 + (Δpy + d) * (Δpy - d)
 
-    @fastmath (-b - sqrt(b^2 - a * c)) / a
+        (-b - sqrt(b^2 - a * c)) / a
+    end
 end
 
 function find_first_collision_single(ps, vs, rs, i)
