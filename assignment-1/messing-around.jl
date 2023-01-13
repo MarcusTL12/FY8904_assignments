@@ -121,6 +121,91 @@ function find_first_collision(ps, vs, rs)
     min_inds, min_t
 end
 
+function find_first_collision_simd(ps, vs, rs)
+    N = 8
+    V = Vec{N,Float64}
+    VI = Vec{N,Int}
+
+    min_inds = (0, 0)
+    min_t = NaN
+
+    i_range = 2:size(ps, 1)
+
+    iv, ir = @inline range_chunks(i_range, N)
+
+    @inbounds for i in iv
+        iv = VecRange{N}(i)
+        pxi = ps[iv, 1]
+        pyi = ps[iv, 2]
+        vxi = vs[iv, 1]
+        vyi = vs[iv, 2]
+        ri = rs[iv]
+
+        min_i_v = VI(0)
+        min_j_v = VI(0)
+        min_t_v = V(NaN)
+
+        for j in i+N:size(ps, 1)
+            t = @inline find_intersection_time(
+                pxi, pyi, V(ps[j, 1]), V(ps[j, 2]),
+                vxi, vyi, V(vs[j, 1]), V(vs[j, 2]),
+                ri, V(rs[j])
+            )
+
+            mask = (t > 0) & !(min_t_v < t)
+            min_i_v = vifelse(mask, VI(i) + rising_vec(VI), min_i_v)
+            min_j_v = vifelse(mask, VI(j), min_j_v)
+            min_t_v = vifelse(mask, t, min_t_v)
+        end
+
+        min_i = 0
+        min_j = 0
+        min_t_local = NaN
+
+        for lane in 1:N
+            i_lane = min_i_v[lane]
+            j_lane = min_j_v[lane]
+            t_lane = min_t_v[lane]
+
+            if t_lane > 0 && !(min_t_local < t_lane)
+                min_i = i_lane
+                min_j = j_lane
+                min_t_local = t_lane
+            end
+        end
+
+        for ii in i:i+N-2, j in ii+1:i+N-1
+            t = @inline find_intersection_time(
+                ps[ii, 1], ps[ii, 2], ps[j, 1], ps[j, 2],
+                vs[ii, 1], vs[ii, 2], vs[j, 1], vs[j, 2],
+                rs[ii], rs[j]
+            )
+
+            if t > 0 && !(min_t_local < t)
+                min_i = ii
+                min_j = j
+                min_t_local = t
+            end
+        end
+
+        if min_t_local > 0 && !(min_t < min_t_local)
+            min_inds = (min_i, min_j)
+            min_t = min_t_local
+        end
+    end
+
+    @inbounds for i in ir
+        j, t = @inline find_first_collision_single(ps, vs, rs, i)
+
+        if t > 0 && !(min_t < t)
+            min_inds = (i, j)
+            min_t = t
+        end
+    end
+
+    min_inds, min_t
+end
+
 function find_first_collision_threaded(ps, vs, rs)
     nth = Threads.nthreads()
 
