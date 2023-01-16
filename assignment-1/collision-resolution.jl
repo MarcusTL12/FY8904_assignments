@@ -1,7 +1,7 @@
 using SIMD
 
-function do_wall_collision!(j, vs, ξ)
-    if -1 <= j
+function do_wall_collision!(i, j, vs, ξ)
+    if -1 <= i
         vs[j, 1] *= -ξ
     else
         vs[j, 2] *= -ξ
@@ -11,7 +11,7 @@ end
 # Updates velocities of particle i and j (or only j if i is wall)
 function do_collision!(i, j, ps, vs, ms, ξ)
     if i < 1
-        do_wall_collision!(j, vs, ξ)
+        do_wall_collision!(i, j, vs, ξ)
         return
     end
 
@@ -33,7 +33,7 @@ function do_collision!(i, j, ps, vs, ms, ξ)
     common = (1 + ξ) * sum(Δv * Δp) * Δp / ((mi + mj) * Rij2)
 
     vi_new = vi + mj * common
-    vj_new = vi - mi * common
+    vj_new = vj - mi * common
 
     vs[i, 1] = vi_new[1]
     vs[i, 2] = vi_new[2]

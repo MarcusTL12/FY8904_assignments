@@ -80,30 +80,27 @@ function show_disks_threaded(ps, rs, resolution)
     Gray.(img)
 end
 
-function animate_line(ps, vs, rs, t1, t2, steps, img_i, dir, resolution;
+function animate_line(ps, vs, rs, t1, t2, Δt, img_i, dir, resolution;
     include_first=true)
-    tr = range(0.0, t2 - t1, steps + 1)
+    tr = t1:Δt:t2
 
-    if include_first
-        img = show_disks(ps, rs, resolution)
-        save("$dir/$img_i.png", img)
+    # if include_first
+    #     img = show_disks(ps, rs, resolution)
+    #     save("$dir/$(lpad(img_i, 6, "0")).png", img)
+    #     img_i += 1
+    # end
+
+    for t in tr
+        img = show_disks(ps .+ vs .* t, rs, resolution)
+
+        save("$dir/$(lpad(img_i, 6, "0")).png", img)
+
         img_i += 1
     end
 
-    img_is = img_i:img_i+steps-1
+    img_i, t2 - last(tr)
+end
 
-    nth = Threads.nthreads()
-    for id in 1:nth
-        for i in id:nth:steps
-            t = tr[i + 1]
-
-            img_j = img_is[i]
-
-            img = show_disks(ps .+ vs .* t, rs, resolution)
-
-            save("$dir/$img_j.png", img)
-        end
-    end
-
-    img_i + steps
+function make_mp4(framesdir, outdir)
+    run(`ffmpeg -framerate 30 -i $framesdir/%06d.png -c:v libx264 -pix_fmt yuv420p $outdir/out.mp4 -y`)
 end

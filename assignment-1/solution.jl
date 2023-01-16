@@ -1,4 +1,5 @@
 using DataStructures
+using Plots
 
 include("collision-detection.jl")
 include("initial-conditions.jl")
@@ -6,28 +7,47 @@ include("collision-resolution.jl")
 include("visualization.jl")
 
 function test_crater()
-    ps, vs, rs, ms = crater_setup(10, 1.0, 1.0, 0.05, 1.0, 1.0)
+    ps, vs, rs, ms = crater_setup(30, 10.0, 1.0, 0.2, 5.0, 1.0)
+    # ps, vs, rs, ms = crater_setup(1, 1.0, 1.0, 0.05, 1.0, 1.0)
+    # ps, vs, rs, ms = simple()
 
     pq = init_collisions(ps, vs, rs)
 
-    display(pq)
+    (i, j), t = dequeue_pair!(pq)
+    Δt = t
 
-    (i, j), t1 = dequeue_pair!(pq)
+    time_per_frame = 0.01
 
-    speed = 300
+    anim_dir = "assignment-1/tmp_anim/"
+    frames_dir = joinpath(anim_dir, "frames")
+    rm(frames_dir; recursive=true, force=true)
+    # mkdir(anim_dir)
+    mkdir(frames_dir)
 
-    img_i = animate_line(ps, vs, rs, 0.0, t1, ceil(Int, speed * t1), 1, "assignment-1/tmp_anim/", 1000)
+    img_i, rem_t = animate_line(
+        ps, vs, rs, 0.0, t, time_per_frame, 1,
+        frames_dir, 1000
+    )
 
-    ps .+= vs .* t1
+    while t < 5
+        ps .+= vs .* Δt
 
-    do_collision!(i, j, ps, vs, ms, 1.0)
+        do_collision!(i, j, ps, vs, ms, 1.0)
 
-    update_collisions!(pq, i, t1, ps, vs, rs)
-    update_collisions!(pq, j, t1, ps, vs, rs)
+        update_collisions!(pq, i, t, ps, vs, rs)
+        update_collisions!(pq, j, t, ps, vs, rs)
 
-    (i, j), t2 = dequeue_pair!(pq)
+        (i, j), nt = dequeue_pair!(pq)
 
-    animate_line(ps, vs, rs, 0.0, t2 - t1, ceil(Int, speed * (t2 - t1)), img_i, "assignment-1/tmp_anim/", 1000; include_first=false)
+        Δt = nt - t
+        t = nt
 
-    pq
+        img_i, rem_t = animate_line(
+            ps, vs, rs, time_per_frame - rem_t, Δt, time_per_frame, img_i,
+            frames_dir, 1000;
+            include_first=false
+        )
+    end
+
+    make_mp4(frames_dir, anim_dir)
 end

@@ -50,3 +50,16 @@ function crater_setup(nx, k, density, p_r, p_density, p_v)
 
     [ps; px py], [vs; pvx pvy], [rs; p_r], [ms; p_m]
 end
+
+function simple()
+    [
+        0.5 0.25
+        0.5 0.75
+    ],
+    [
+        0.0 1.0
+        0.0 0.0
+    ],
+    [0.03, 0.03],
+    [1.0, 1.0]
+end
