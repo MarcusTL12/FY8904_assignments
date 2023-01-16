@@ -7,7 +7,7 @@ include("collision-resolution.jl")
 include("visualization.jl")
 
 function test_crater()
-    ps, vs, rs, ms = crater_setup(30, 10.0, 1.0, 0.2, 5.0, 1.0)
+    ps, vs, rs, ms = crater_setup(30, 20.0, 1.0, 0.2, 10.0, 1.0)
     # ps, vs, rs, ms = crater_setup(1, 1.0, 1.0, 0.05, 1.0, 1.0)
     # ps, vs, rs, ms = simple()
 
