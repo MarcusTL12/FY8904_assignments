@@ -23,8 +23,6 @@ function crater_setup(nx, k, density)
     r = 1 / (2nx + (nx + 1) / k)
     d = r / k
 
-    @show r d
-
     x1 = d + r
     x2 = 1 - x1
 
