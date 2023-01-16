@@ -17,3 +17,23 @@ function still_grid(x1, x2, y1, y2, nx, ny, r, m)
 
     ps, vs, rs, ms
 end
+
+# r = k * d
+function crater_setup(nx, k, density)
+    r = 1 / (2nx + (nx + 1) / k)
+    d = r / k
+
+    @show r d
+
+    x1 = d + r
+    x2 = 1 - x1
+
+    ny = nx ÷ 2
+
+    h = 2ny * r + (ny + 1) * d
+
+    y1 = (1 - h) + x1
+    y2 = x2
+
+    still_grid(x1, x2, y1, y2, nx, ny, r, 1.0)
+end
