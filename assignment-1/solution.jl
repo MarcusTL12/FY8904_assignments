@@ -14,5 +14,11 @@ function test_crater()
 
     ps .+= vs .* t
 
+    do_collision!(i, j, ps, vs, ms, 1.0)
+
+    display(show_disks(ps, rs, 1000))
+
+    ps .+= vs .* 0.01
+
     show_disks(ps, rs, 1000)
 end

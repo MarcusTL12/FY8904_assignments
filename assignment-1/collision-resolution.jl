@@ -30,7 +30,7 @@ function do_collision!(i, j, ps, vs, ms, ξ)
     mi = ms[i]
     mj = ms[j]
 
-    common = (1 + ξ) * sum(Δv * Δx) * Δp / ((mi + mj) * Rij2)
+    common = (1 + ξ) * sum(Δv * Δp) * Δp / ((mi + mj) * Rij2)
 
     vi_new = vi + mj * common
     vj_new = vi - mi * common
