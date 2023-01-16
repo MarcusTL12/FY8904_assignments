@@ -33,6 +33,11 @@ function delete_occurences!(pq, i, n)
     end
 end
 
+# indices for walls:
+#  0: right wall    (+x)
+# -1: left wall     (-x)
+# -2: bottom wall   (+y)
+# -3: top wall      (-y)
 function add_wall_collisions!(pq, i, t, ps, vs, rs)
     x = ps[i, 1]
     y = ps[i, 2]
@@ -49,12 +54,12 @@ function add_wall_collisions!(pq, i, t, ps, vs, rs)
     Δt = Inf
 
     if isfinite(Δtx)
-        j = (Δtx > 0) - 1
+        j = (vx > 0) - 1
         Δt = Δtx
     end
 
     if isfinite(Δty) && Δty < Δt
-        j = (Δty > 0) - 3
+        j = (vy > 0) - 3
         Δt = Δty
     end
 
@@ -65,7 +70,7 @@ function add_wall_collisions!(pq, i, t, ps, vs, rs)
 end
 
 function add_disk_collisions!(pq, i, t, ps, vs, rs)
-    n = length(ps)
+    n = size(ps, 1)
 
     for j in 1:n
         Δt = find_intersection_time(
