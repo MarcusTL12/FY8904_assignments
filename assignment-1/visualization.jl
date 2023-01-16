@@ -36,7 +36,7 @@ function show_disks_simd(ps, rs, resolution)
 
     krv, krr = range_chunks(1:size(ps, 1), N)
 
-    for (j, x) in enumerate(xr), (i, y) in enumerate(yr)
+    @inbounds for (j, x) in enumerate(xr), (i, y) in enumerate(yr)
         pixel_v = V(img[i, j])
 
         for k in krv
@@ -48,7 +48,8 @@ function show_disks_simd(ps, rs, resolution)
             Δdv = (√((x - pxv)^2 + (y - pyv)^2) - rv) * resolution
 
             pixel_v = vifelse(Δdv <= -0.5, 1.0, pixel_v)
-            pixel_v = vifelse(Δdv <= 0.5, max(0.5 - Δdv, pixel_v), pixel_v)
+            pixel_v = vifelse((-0.5 < Δdv) & (Δdv <= 0.5),
+                max(0.5 - Δdv, pixel_v), pixel_v)
         end
 
         img[i, j] = maximum(pixel_v)
