@@ -1,5 +1,6 @@
 using Images
 using SIMD
+using LinearAlgebra
 
 include("simd-utils.jl")
 
@@ -77,4 +78,32 @@ function show_disks_threaded(ps, rs, resolution)
     end
 
     Gray.(img)
+end
+
+function animate_line(ps, vs, rs, t1, t2, steps, img_i, dir, resolution;
+    include_first=true)
+    tr = range(0.0, t2 - t1, steps + 1)
+
+    if include_first
+        img = show_disks(ps, rs, resolution)
+        save("$dir/$img_i.png", img)
+        img_i += 1
+    end
+
+    img_is = img_i:img_i+steps-1
+
+    nth = Threads.nthreads()
+    for id in 1:nth
+        for i in id:nth:steps
+            t = tr[i + 1]
+
+            img_j = img_is[i]
+
+            img = show_disks(ps .+ vs .* t, rs, resolution)
+
+            save("$dir/$img_j.png", img)
+        end
+    end
+
+    img_i + steps
 end

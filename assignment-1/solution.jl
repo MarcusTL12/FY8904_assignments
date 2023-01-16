@@ -12,13 +12,11 @@ function test_crater()
 
     (i, j), t = dequeue_pair!(pq)
 
+    img_i = animate_line(ps, vs, rs, 0.0, t, 100, 1, "assignment-1/tmp_anim/", 1000)
+
     ps .+= vs .* t
 
     do_collision!(i, j, ps, vs, ms, 1.0)
 
-    display(show_disks(ps, rs, 1000))
-
-    ps .+= vs .* 0.01
-
-    show_disks(ps, rs, 1000)
+    animate_line(ps, vs, rs, 0.0, 0.05, 30, img_i, "assignment-1/tmp_anim/", 1000; include_first=false)
 end

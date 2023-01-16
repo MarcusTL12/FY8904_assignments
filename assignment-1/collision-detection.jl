@@ -87,7 +87,7 @@ function add_disk_collisions!(pq, i, t, ps, vs, rs)
 end
 
 function update_collisions!(pq, i, t, ps, vs, rs)
-    delete_occurences!(pq, i, length(ps))
+    delete_occurences!(pq, i, size(ps, 1))
     add_wall_collisions!(pq, i, t, ps, vs, rs)
     add_disk_collisions!(pq, i, t, ps, vs, rs)
 end
