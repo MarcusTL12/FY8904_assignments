@@ -1,6 +1,7 @@
 using Images
 using SIMD
 using LinearAlgebra
+using FFMPEG
 
 include("simd-utils.jl")
 
@@ -101,6 +102,6 @@ function animate_line(ps, vs, rs, t1, t2, Δt, img_i, dir, resolution;
     img_i, t2 - last(tr)
 end
 
-function make_mp4(framesdir, outdir)
-    run(`ffmpeg -framerate 30 -i $framesdir/%06d.png -c:v libx264 -pix_fmt yuv420p $outdir/out.mp4 -y`)
+function make_mp4(framesdir, outdir; nth=Threads.nthreads())
+    FFMPEG.exe(`-threads $nth -framerate 30 -i $framesdir/%06d.png -c:v libx264 -pix_fmt yuv420p $outdir/out.mp4 -y`)
 end
