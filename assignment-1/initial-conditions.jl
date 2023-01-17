@@ -18,6 +18,25 @@ function still_grid(x1, x2, y1, y2, nx, ny, r, m)
     ps, vs, rs, ms
 end
 
+function still_grid_rand(x1, x2, y1, y2, nx, ny, r, m)
+    xr = range(x1, x2; length=nx)
+    yr = range(y1, y2; length=ny)
+
+    n = nx * ny
+
+    ps = zeros(n, 2)
+    vs = zeros(n, 2)
+    rs = fill(r, n)
+    ms = fill(m, n)
+
+    for (i, x) in enumerate(xr), (j, y) in enumerate(yr)
+        ps[begin+ny*(i-1)+(j-1), 1] = x + randn() * r * 0.01
+        ps[begin+ny*(i-1)+(j-1), 2] = y + randn() * r * 0.01
+    end
+
+    ps, vs, rs, ms
+end
+
 # r = k * d
 function crater_setup(nx, k, density, p_r, p_density, p_v)
     r = 1 / (2nx + (nx + 1) / k)
@@ -36,7 +55,7 @@ function crater_setup(nx, k, density, p_r, p_density, p_v)
     area = π * r^2
     m = area * density
 
-    ps, vs, rs, ms = still_grid(x1, x2, y1, y2, nx, ny, r, m)
+    ps, vs, rs, ms = still_grid_rand(x1, x2, y1, y2, nx, ny, r, m)
 
     px = 0.5
     py = p_r + 0.01
