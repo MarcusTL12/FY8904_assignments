@@ -103,5 +103,9 @@ function animate_line(ps, vs, rs, t1, t2, Δt, img_i, dir, resolution;
 end
 
 function make_mp4(framesdir, outdir; nth=Threads.nthreads())
-    FFMPEG.exe(`-threads $nth -framerate 30 -i $framesdir/%06d.png -c:v libx264 -pix_fmt yuv420p $outdir/out.mp4 -y`)
+    FFMPEG.exe(`-threads $nth -framerate 60 -i $framesdir/%06d.png -c:v libx264 -pix_fmt yuv420p $outdir/out.mp4 -y`)
+end
+
+function compress_output(outdir; nth=Threads.nthreads())
+    FFMPEG.exe(`-threads $nth -i $outdir/out.mp4 -vcodec libx265 -crf 28 $outdir/out_cmp.mp4`)
 end

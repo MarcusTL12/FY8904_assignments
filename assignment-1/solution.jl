@@ -7,16 +7,20 @@ include("collision-resolution.jl")
 include("visualization.jl")
 
 function test_crater()
-    ps, vs, rs, ms = crater_setup(30, 1.0, 1.0, 0.2, 1.0, 1.0)
+    ps, vs, rs, ms = crater_setup(20, 1.0, 1.0, 0.05, 1.0, 1.0)
     # ps, vs, rs, ms = crater_setup(1, 1.0, 1.0, 0.05, 1.0, 1.0)
     # ps, vs, rs, ms = simple()
 
-    pq = init_collisions(ps, vs, rs)
+    ξ = 0.90
+    t_target = 5.0
+
+    println("Initializing PQ:")
+    pq = @time init_collisions(ps, vs, rs)
 
     (i, j), t = dequeue_pair!(pq)
     Δt = t
 
-    time_per_frame = 0.01
+    time_per_frame = 0.003
 
     anim_dir = "assignment-1/tmp_anim/"
     frames_dir = joinpath(anim_dir, "frames")
@@ -29,10 +33,19 @@ function test_crater()
         frames_dir, 1000
     )
 
-    while t < 5
+    t_logic = 0.0
+    t_frame_gen = 0.0
+
+    n_collisions = 0
+
+    progress_timer = time()
+    progress_interval = 2.0
+
+    while t < t_target
+        timer1 = time()
         ps .+= vs .* Δt
 
-        do_collision!(i, j, ps, vs, ms, 1.0)
+        do_collision!(i, j, ps, vs, ms, ξ)
 
         update_collisions!(pq, i, t, ps, vs, rs)
         update_collisions!(pq, j, t, ps, vs, rs)
@@ -42,12 +55,30 @@ function test_crater()
         Δt = nt - t
         t = nt
 
+        timer2 = time()
+
+        t_logic += timer2 - timer1
+
         img_i, rem_t = animate_line(
             ps, vs, rs, time_per_frame - rem_t, Δt, time_per_frame, img_i,
             frames_dir, 1000;
             include_first=false
         )
+
+        timer3 = time()
+
+        t_frame_gen += timer3 - timer2
+
+        n_collisions += 1
+
+        if timer3 >= progress_timer + progress_interval
+            progress_timer += progress_interval
+            println("$(round(t; digits=4)) / $t_target = ",
+                round(100 * t / t_target; digits=2), "%")
+        end
     end
 
     make_mp4(frames_dir, anim_dir)
+
+    @show t_logic t_frame_gen n_collisions
 end
