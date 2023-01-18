@@ -31,7 +31,9 @@ function show_disks(ps, rs, resolution)
             if Δd <= -0.5
                 img[i, j] = 1.0
             elseif Δd <= 0.5
-                img[i, j] = max(0.5 - Δd, img[i, j])
+                # img[i, j] = max(0.5 - Δd, img[i, j])
+                # img[i, j] = 0.5 - Δd
+                img[i, j] = min(1.0, img[i, j] + 0.5 - Δd)
             end
         end
     end
