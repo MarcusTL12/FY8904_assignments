@@ -33,7 +33,7 @@ function test_crater()
 end
 
 function test_gas()
-    ps, vs, rs, ms = hexgrid_rand_velocities(10, 0.1, 1.0, 1.0)
+    ps, vs, rs, ms = hexgrid_rand_velocities(100, 0.01, 1.0, 1.0)
 
     ξ = 1.0
     t_target = 5.0

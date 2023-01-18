@@ -39,6 +39,12 @@ end
 # -2: bottom wall   (+y)
 # -3: top wall      (-y)
 function add_wall_collisions!(pq, i, t, ps, vs, rs)
+    for j in -3:0
+        if haskey(pq, (j, i))
+            delete!(pq, (j, i))
+        end
+    end
+
     x = ps[i, 1]
     y = ps[i, 2]
 
@@ -63,11 +69,9 @@ function add_wall_collisions!(pq, i, t, ps, vs, rs)
         Δt = Δty
     end
 
-    ij = (j, i)
     if isfinite(Δt)
+        ij = (j, i)
         pq[ij] = t + Δt
-    elseif haskey(pq, ij)
-        delete!(pq, ij)
     end
 end
 
