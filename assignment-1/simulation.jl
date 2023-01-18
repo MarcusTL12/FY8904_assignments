@@ -93,7 +93,9 @@ function simulate(ps, vs, rs, ms, ξ, t_target, kin_e_target, time_per_frame,
 
     @show t_logic t_frame_gen n_collisions
 
-    reshape(ps_history, size(ps)..., n_collisions + 1),
-    reshape(vs_history, size(vs)..., n_collisions + 1),
-    t_history
+    if collect_data
+        reshape(ps_history, size(ps)..., n_collisions + 1),
+        reshape(vs_history, size(vs)..., n_collisions + 1),
+        t_history
+    end
 end

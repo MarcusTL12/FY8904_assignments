@@ -39,9 +39,7 @@ end
 
 # k = packing density.
 # k ∈ [0.0, 0.9]
-function still_hex_grid(x0, y0, nx, ny, k, d, m)
-    r = d * √(√3 / 2π * k)
-
+function still_hex_grid(x0, y0, nx, ny, r, d, m)
     d_between = d - 2r
 
     ps = zeros(2nx * ny, 2)
@@ -103,21 +101,28 @@ function crater_setup(nx, k, density, p_r, p_density, p_v)
     [ps; px py], [vs; pvx pvy], [rs; p_r], [ms; p_m]
 end
 
-function crater_setup_hex(nx, k, density, p_r, p_density, p_v)
+function still_hex_grid_box(x1, x2, y1, y2, nx, k, density)
     k′ = √(√3 / 2π * k)
 
-    d = 1 / ((nx - 1 / 2) + 2 - 2k′)
+    W = x2 - x1
+    H = y2 - y1
+
+    d = W / ((nx - 1 / 2) + 2 - 2k′)
     r = k′ * d
 
-    x = d - r
+    x = x1 + d - r
 
-    ny = round(Int, (1 / 2d - 1) / √3 + 1 / 2)
-    y = 1 - ((ny - 1 / 2) * √3 + 1) * d + r
+    ny = floor(Int, (H / d - 1) / √3 + 1 / 2)
+    y = y2 - ((ny - 1 / 2) * √3 + 1) * d + r
 
     area = π * r^2
     m = area * density
 
-    ps, vs, rs, ms = still_hex_grid(x, y, nx, ny, k, d, m)
+    still_hex_grid(x, y, nx, ny, r, d, m)
+end
+
+function crater_setup_hex(nx, k, density, p_r, p_density, p_v)
+    ps, vs, rs, ms = still_hex_grid_box(0.0, 1.0, 0.5, 1.0, nx, k, density)
 
     px = 0.5
     py = p_r + 0.01
@@ -130,6 +135,23 @@ function crater_setup_hex(nx, k, density, p_r, p_density, p_v)
     p_m = p_area * p_density
 
     [ps; px py], [vs; pvx pvy], [rs; p_r], [ms; p_m]
+end
+
+function randomize_velocities!(vs, v)
+    for i in axes(vs, 1)
+        θ = rand() * 2π
+        x, y = sincos(θ)
+        vs[i, 1] = x * v
+        vs[i, 2] = y * v
+    end
+end
+
+function hexgrid_rand_velocities(nx, k, density, v)
+    ps, vs, rs, ms = still_hex_grid_box(0.0, 1.0, 0.0, 1.0, nx, k, density)
+
+    randomize_velocities!(vs, v)
+
+    ps, vs, rs, ms
 end
 
 function simple()
