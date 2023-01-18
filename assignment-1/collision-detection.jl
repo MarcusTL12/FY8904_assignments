@@ -63,9 +63,11 @@ function add_wall_collisions!(pq, i, t, ps, vs, rs)
         Δt = Δty
     end
 
+    ij = (j, i)
     if isfinite(Δt)
-        ij = (j, i)
         pq[ij] = t + Δt
+    elseif haskey(pq, ij)
+        delete!(pq, ij)
     end
 end
 
@@ -79,16 +81,18 @@ function add_disk_collisions!(pq, i, t, ps, vs, rs)
             rs[i], rs[j]
         )
 
+        ij = sorttuple((i, j))
         if isfinite(Δt) && Δt > 0
-            ij = sorttuple((i, j))
             pq[ij] = t + Δt
+        elseif haskey(pq, ij)
+            delete!(pq, ij)
         end
     end
 end
 
 function update_collisions!(pq, i, t, ps, vs, rs)
     if i >= 1
-        delete_occurences!(pq, i, size(ps, 1))
+        # delete_occurences!(pq, i, size(ps, 1))
         add_wall_collisions!(pq, i, t, ps, vs, rs)
         add_disk_collisions!(pq, i, t, ps, vs, rs)
     end

@@ -9,7 +9,7 @@ include("simulation.jl")
 include("analysis.jl")
 
 function test_crater()
-    ps, vs, rs, ms = crater_setup_hex(10, 0.1, 1.0, 0.05, 2.0, 1.0)
+    ps, vs, rs, ms = crater_setup_hex(30, 0.8, 1.0, 0.05, 2.0, 1.0)
 
     ξ = 0.99
     t_target = 5.0
