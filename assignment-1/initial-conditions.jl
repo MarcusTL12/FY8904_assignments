@@ -42,8 +42,10 @@ end
 function still_hex_grid(x0, y0, nx, ny, k, d, m)
     r = d * √(√3 / 2π * k)
 
+    d_between = d - 2r
+
     ps = zeros(2nx * ny, 2)
-    ps = zeros(2nx * ny, 2)
+    vs = zeros(2nx * ny, 2)
     rs = fill(r, 2nx * ny)
     ms = fill(m, 2nx * ny)
 
@@ -52,11 +54,13 @@ function still_hex_grid(x0, y0, nx, ny, k, d, m)
     for j in 1:ny
         x = x0
         for i in 1:nx
-            ps[begin+2nx*(j-1)+2(i - 1), 1] = x
-            ps[begin+2nx*(j-1)+2(i - 1), 2] = y
+            ps[begin+2nx*(j-1)+2(i-1), 1] = x + randn() * d_between * 0.1
+            ps[begin+2nx*(j-1)+2(i-1), 2] = y + randn() * d_between * 0.1
 
-            ps[begin+2nx*(j-1)+2(i - 1) + 1, 1] = x + d/2
-            ps[begin+2nx*(j-1)+2(i - 1) + 1, 2] = y + d * √3/2
+            ps[begin+2nx*(j-1)+2(i-1)+1, 1] = x + d / 2 +
+                                              randn() * d_between * 0.1
+            ps[begin+2nx*(j-1)+2(i-1)+1, 2] = y + d * √3 / 2 +
+                                              randn() * d_between * 0.1
             x += d
         end
 
@@ -102,13 +106,13 @@ end
 function crater_setup_hex(nx, k, density, p_r, p_density, p_v)
     k′ = √(√3 / 2π * k)
 
-    d = 1 / ((nx - 1/2) + 2 - 2k′)
+    d = 1 / ((nx - 1 / 2) + 2 - 2k′)
     r = k′ * d
 
     x = d - r
 
-    ny = round(Int, (1/2d - 1) / √3 + 1/2)
-    y = 1 - ((ny - 1/2) * √3 + 1) * d + r
+    ny = round(Int, (1 / 2d - 1) / √3 + 1 / 2)
+    y = 1 - ((ny - 1 / 2) * √3 + 1) * d + r
 
     area = π * r^2
     m = area * density
