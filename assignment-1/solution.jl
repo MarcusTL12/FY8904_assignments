@@ -33,17 +33,20 @@ function test_crater()
 end
 
 function test_gas()
-    ps, vs, rs, ms = hexgrid_rand_velocities(100, 0.01, 1.0, 1.0)
+    ps, vs, rs, ms = hexgrid_rand_velocities(40, 0.01, 1.0, 1.0)
 
     ξ = 1.0
-    t_target = 5.0
+    t_target = 1.0
     kin_e_target = 0.1
     time_per_frame = 0.003
     resolution = 1000
 
     anim_dir = "assignment-1/tmp_anim/"
 
-    simulate(ps, vs, rs, ms, ξ,
+    ps_hist, vs_hist, t_hist = simulate(ps, vs, rs, ms, ξ,
         t_target, kin_e_target,
-        time_per_frame, true, anim_dir, resolution, false)
+        time_per_frame, false, anim_dir, resolution, true)
+
+    display(plot_v_mean_stddev(t_hist, vs_hist))
+    plot_v_dist_hist([0.1, 0.2, 0.3, 1.0], t_hist, vs_hist, 4.0)
 end
