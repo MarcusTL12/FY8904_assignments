@@ -39,7 +39,21 @@ function plot_v_dist(vs)
     plot(0:0.01:5, x -> pdf(k, x); leg=false)
 end
 
-function plot_v_dist_hist(ts, t_hist, vs_hist, max_v)
+function plot_v_dist(t, t_hist, vs_hist, bandwidth=nothing)
+    i = get_closest_t_indices(t_hist, [t])[1]
+
+    vs = @view vs_hist[:,:,i]
+
+    data = [hypot(v[1], v[2]) for v in eachrow(vs)]
+
+    if !isnothing(bandwidth)
+        density!(data; label="t=$(round(t; digits=2))", bandwidth=bandwidth, trim=true)
+    else
+        density!(data; label="t=$(round(t; digits=2))", trim=true)
+    end
+end
+
+function plot_v_dist_hist(ts, t_hist, vs_hist)
     is = get_closest_t_indices(t_hist, ts)
 
     plot()
@@ -49,11 +63,6 @@ function plot_v_dist_hist(ts, t_hist, vs_hist, max_v)
 
         data = [hypot(v[1], v[2]) for v in eachrow(vs)]
 
-        # k = kde(data)
-
-        # plot!(range(0.0, max_v, 1000), x -> pdf(k, x); label="t=$t")
-
-        # histogram!(data; label="t=$t", bins=100)
         density!(data; label="t=$t")
     end
     plot!()
@@ -87,4 +96,12 @@ function get_closest_t_indices(t_hist, ts)
     end
 
     is
+end
+
+function plot_theoretical_maxwell_boltzmann(E, m, n, vmin, vmax)
+    kbT = E / n
+
+    vr = range(vmin, vmax, 1000)
+
+    plot!(vr, v -> m * v / kbT * exp(-m * v^2 / 2kbT); label="MBD")
 end

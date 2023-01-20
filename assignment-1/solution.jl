@@ -48,5 +48,5 @@ function test_gas()
         time_per_frame, false, anim_dir, resolution, true)
 
     display(plot_v_mean_stddev(t_hist, vs_hist))
-    plot_v_dist_hist([0.1, 0.2, 0.3, 1.0], t_hist, vs_hist, 4.0)
+    plot_v_dist_hist([0.1, 0.15, 0.2], t_hist, vs_hist, 2.0)
 end
