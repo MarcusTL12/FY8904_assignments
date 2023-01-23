@@ -35,8 +35,12 @@ end
 function test_gas()
     ps, vs, rs, ms = hexgrid_rand_velocities(40, 0.01, 1.0, 1.0)
 
+    E = calculate_kin_e(vs, ms)
+    n = size(ps, 1)
+    m = ms[1]
+
     ξ = 1.0
-    t_target = 1.0
+    t_target = 10.0
     kin_e_target = 0.1
     time_per_frame = 0.003
     resolution = 1000
@@ -48,5 +52,7 @@ function test_gas()
         time_per_frame, false, anim_dir, resolution, true)
 
     display(plot_v_mean_stddev(t_hist, vs_hist))
-    plot_v_dist_hist([0.1, 0.15, 0.2], t_hist, vs_hist, 2.0)
+    plot()
+    plot_v_dist_window(0.5, 10.0, 1000, t_hist, vs_hist)
+    plot_theoretical_maxwell_boltzmann(E, m, n, 0.0, 3.0)
 end
