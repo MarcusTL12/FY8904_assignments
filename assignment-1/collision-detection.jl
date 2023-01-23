@@ -103,7 +103,7 @@ function update_collisions!(pq, i, t, ps, vs, rs)
 end
 
 function init_collisions(ps, vs, rs)
-    pq = PriorityQueue{NTuple{2,Int},Float64}()
+    pq = PriorityQueue{NTuple{2,Int32},Float64}()
 
     for i in axes(ps, 1)
         update_collisions!(pq, i, 0.0, ps, vs, rs)

@@ -31,14 +31,6 @@ function plot_v_mean_stddev(t_hist, vs_hist)
     plot!(t_hist, stds; label="std")
 end
 
-function plot_v_dist(vs)
-    data = [hypot(v[1], v[2]) for v in eachrow(vs)]
-
-    k = kde(data)
-
-    plot(0:0.01:5, x -> pdf(k, x); leg=false)
-end
-
 function plot_v_dist(t, t_hist, vs_hist, bandwidth=nothing)
     i = get_closest_t_indices(t_hist, [t])[1]
 
@@ -50,6 +42,26 @@ function plot_v_dist(t, t_hist, vs_hist, bandwidth=nothing)
         density!(data; label="t=$(round(t; digits=2))", bandwidth=bandwidth, trim=true)
     else
         density!(data; label="t=$(round(t; digits=2))", trim=true)
+    end
+end
+
+function plot_v_dist_window(tmin, tmax, nt, t_hist, vs_hist, bandwidth=nothing)
+    ts = range(tmin, tmax, nt)
+
+    is = get_closest_t_indices(t_hist, ts)
+
+    data = Float64[]
+
+    for i in is
+        vs = @view vs_hist[:,:,i]
+
+        append!(data, hypot(v[1], v[2]) for v in eachrow(vs))
+    end
+
+    if !isnothing(bandwidth)
+        density!(data; label="t∈($(round(tmin; digits=2)),$(round(tmax; digits=2))),n=$nt", bandwidth=bandwidth, trim=true)
+    else
+        density!(data; label="t∈($(round(tmin; digits=2)),$(round(tmax; digits=2))),n=$nt", trim=true)
     end
 end
 
