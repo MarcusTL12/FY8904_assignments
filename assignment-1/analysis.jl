@@ -23,12 +23,20 @@ function calculate_std_v(vs)
     std(hypot(v[1], v[2]) for v in eachrow(vs))
 end
 
-function plot_v_mean_stddev(t_hist, vs_hist)
+function plot_v_mean_stddev(t_hist, vs_hist; label="")
     means = [calculate_mean_v(vs) for vs in eachslice(vs_hist; dims=3)]
     stds = [calculate_std_v(vs) for vs in eachslice(vs_hist; dims=3)]
 
-    plot(t_hist, means; label="mean")
-    plot!(t_hist, stds; label="std")
+    plot(t_hist, means; label="mean $label")
+    plot!(t_hist, stds; label="std $label")
+end
+
+function plot_v_mean_stddev!(t_hist, vs_hist; label="")
+    means = [calculate_mean_v(vs) for vs in eachslice(vs_hist; dims=3)]
+    stds = [calculate_std_v(vs) for vs in eachslice(vs_hist; dims=3)]
+
+    plot!(t_hist, means; label="mean $label")
+    plot!(t_hist, stds; label="std $label")
 end
 
 function plot_v_dist(t, t_hist, vs_hist, bandwidth=nothing)
@@ -45,7 +53,7 @@ function plot_v_dist(t, t_hist, vs_hist, bandwidth=nothing)
     end
 end
 
-function plot_v_dist_window(tmin, tmax, nt, t_hist, vs_hist, bandwidth=nothing)
+function plot_v_dist_window(tmin, tmax, nt, t_hist, vs_hist, bandwidth=nothing; label="")
     ts = range(tmin, tmax, nt)
 
     is = get_closest_t_indices(t_hist, ts)
@@ -59,9 +67,9 @@ function plot_v_dist_window(tmin, tmax, nt, t_hist, vs_hist, bandwidth=nothing)
     end
 
     if !isnothing(bandwidth)
-        density!(data; label="t∈($(round(tmin; digits=2)),$(round(tmax; digits=2))),n=$nt", bandwidth=bandwidth, trim=true)
+        density!(data; label="t∈($(round(tmin; digits=2)),$(round(tmax; digits=2))),n=$nt,$label", bandwidth=bandwidth, trim=true)
     else
-        density!(data; label="t∈($(round(tmin; digits=2)),$(round(tmax; digits=2))),n=$nt", trim=true)
+        density!(data; label="t∈($(round(tmin; digits=2)),$(round(tmax; digits=2))),n=$nt,$label", trim=true)
     end
 end
 
@@ -110,10 +118,10 @@ function get_closest_t_indices(t_hist, ts)
     is
 end
 
-function plot_theoretical_maxwell_boltzmann(E, m, n, vmin, vmax)
+function plot_theoretical_maxwell_boltzmann(E, m, n, vmin, vmax; label="")
     kbT = E / n
 
     vr = range(vmin, vmax, 1000)
 
-    plot!(vr, v -> m * v / kbT * exp(-m * v^2 / 2kbT); label="MBD")
+    plot!(vr, v -> m * v / kbT * exp(-m * v^2 / 2kbT); label="MBD,$label")
 end
