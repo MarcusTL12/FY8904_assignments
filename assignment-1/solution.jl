@@ -33,11 +33,13 @@ function test_crater()
 end
 
 function test_gas()
-    ps, vs, rs, ms = hexgrid_rand_velocities(40, 0.01, 1.0, 1.0)
+    ps, vs, rs, ms = hexgrid_rand_velocities(50, 0.01, 1.0, 1.0)
 
     E = calculate_kin_e(vs, ms)
     n = size(ps, 1)
     m = ms[1]
+
+    @show n
 
     ξ = 1.0
     t_target = 10.0
@@ -53,6 +55,6 @@ function test_gas()
 
     display(plot_v_mean_stddev(t_hist, vs_hist))
     plot()
-    plot_v_dist_window(0.5, 10.0, 1000, t_hist, vs_hist)
+    plot_v_dist_window(0.5, t_target, 1000, t_hist, vs_hist)
     plot_theoretical_maxwell_boltzmann(E, m, n, 0.0, 3.0)
 end
