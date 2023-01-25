@@ -126,7 +126,7 @@ function test_inhomogenous_gas()
 end
 
 function test_inhomogenous_gas_inelastic()
-    ps, vs, rs, ms = hexgrid_rand_velocities(40, 0.1, 1.0, 1.0)
+    ps, vs, rs, ms = hexgrid_rand_velocities(20, 0.1, 1.0, 1.0)
 
     n = size(ps, 1)
 
@@ -142,10 +142,10 @@ function test_inhomogenous_gas_inelastic()
     m_lo = ms[1]
     m_hi = ms[end]
 
-    ξ = 1.0
+    ξ = 0.9
     t_target = Inf
     kin_e_target = 0.1
-    collision_target = 1000n
+    collision_target = 100n
     time_per_frame = 0.003
     resolution = 1000
 
