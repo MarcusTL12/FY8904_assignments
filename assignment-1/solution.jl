@@ -60,7 +60,7 @@ function test_gas()
 end
 
 function test_inhomogenous_gas()
-    ps, vs, rs, ms = hexgrid_rand_velocities(40, 0.1, 1.0, 1.0)
+    ps, vs, rs, ms = hexgrid_rand_velocities(10, 0.5, 1.0, 1.0)
 
     n = size(ps, 1)
 
@@ -77,30 +77,40 @@ function test_inhomogenous_gas()
     m_hi = ms[end]
 
     ξ = 1.0
-    t_target = 10.0
+    t_target = Inf
     kin_e_target = 0.1
+    collision_target = 1000n
     time_per_frame = 0.003
     resolution = 1000
+
+    data_target = 10000
+    data_interval = cld(collision_target, data_target)
+    @show data_interval
 
     anim_dir = "assignment-1/tmp_anim/"
 
     ps_hist, vs_hist, t_hist = simulate(ps, vs, rs, ms, ξ,
-        t_target, kin_e_target, Inf,
-        time_per_frame, false, true, anim_dir, resolution, true, 10)
+        t_target, kin_e_target, collision_target,
+        time_per_frame, true, true, anim_dir, resolution, true, data_interval)
 
-    t_start = 5.0
+    plot()
+    plot_kin_e_history!(t_hist, (@view vs_hist[is_lo, :, :]),
+        (@view ms[is_lo]), E; label="m = 1")
+    plot_kin_e_history!(t_hist, (@view vs_hist[is_hi, :, :]),
+        (@view ms[is_hi]), E; label="m = 4")
+
+    display(plot!())
+
+    t_end = t_hist[end]
+    t_start = t_end / 2
     n_points = 1000
 
-    plot_v_mean_stddev(t_hist, (@view vs_hist[is_lo, :, :]); label="m=1")
-    display(
-        plot_v_mean_stddev!(t_hist, (@view vs_hist[is_hi, :, :]); label="m=4")
-    )
     plot()
-    plot_v_dist_window(t_start, t_target, n_points, t_hist,
+    plot_v_dist_window(t_start, t_end, n_points, t_hist,
         (@view vs_hist[is_lo, :, :]); label="m=1")
     plot_theoretical_maxwell_boltzmann(E / 2, m_lo, n_half, 0.0, 5.0;
         label="m=1")
-    plot_v_dist_window(t_start, t_target, n_points, t_hist,
+    plot_v_dist_window(t_start, t_end, n_points, t_hist,
         (@view vs_hist[is_hi, :, :]); label="m=4")
     plot_theoretical_maxwell_boltzmann(E / 2, m_hi, n_half, 0.0, 3.0;
         label="m=4")
