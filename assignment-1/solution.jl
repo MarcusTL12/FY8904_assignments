@@ -142,7 +142,7 @@ function test_inhomogenous_gas_inelastic()
     m_lo = ms[1]
     m_hi = ms[end]
 
-    ξ = 0.9
+    ξ = 1.01
     t_target = Inf
     kin_e_target = 0.1
     collision_target = 100n
@@ -160,7 +160,7 @@ function test_inhomogenous_gas_inelastic()
         time_per_frame, true, true, anim_dir, resolution, true, data_interval)
 
 
-    plot(; ylims=[0, 1])
+    plot()
     kin_e_hist = [calculate_kin_e(vs, ms) for vs in eachslice(vs_hist; dims=3)]
     plot_kin_e_history!(t_hist, (@view vs_hist[is_lo, :, :]),
         (@view ms[is_lo]), kin_e_hist; label="m = 1")
@@ -168,7 +168,7 @@ function test_inhomogenous_gas_inelastic()
         (@view ms[is_hi]), kin_e_hist; label="m = 4")
     display(plot!())
 
-    plot(; ylims=[0, 1])
+    plot()
     plot_kin_e_history!(t_hist, vs_hist, ms, E; label="tot")
     plot_kin_e_history!(t_hist, (@view vs_hist[is_lo, :, :]),
         (@view ms[is_lo]), E; label="m = 1")
