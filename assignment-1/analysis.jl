@@ -15,6 +15,14 @@ function plot_kin_e_history(t_hist, vs_hist, ms)
     plot(t_hist, rel_kin_e; leg=false, ylims=[0.0, 1.0])
 end
 
+function plot_kin_e_history!(t_hist, vs_hist, ms, tot_e; label="")
+    kin_e_hist = [calculate_kin_e(vs, ms) for vs in eachslice(vs_hist; dims=3)]
+
+    rel_kin_e = kin_e_hist ./ tot_e
+
+    plot!(t_hist, rel_kin_e; label=label)
+end
+
 function calculate_mean_v(vs)
     mean(hypot(v[1], v[2]) for v in eachrow(vs))
 end

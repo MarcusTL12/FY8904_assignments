@@ -1,6 +1,6 @@
 
-function simulate(ps, vs, rs, ms, ξ, t_target, kin_e_target, time_per_frame,
-    animate, anim_dir, resolution, collect_data)
+function simulate(ps, vs, rs, ms, ξ, t_target, kin_e_target, collission_target, time_per_frame,
+    animate, anim_dir, resolution, collect_data, data_interval)
     println("Initializing PQ:")
     pq = @time init_collisions(ps, vs, rs)
 
@@ -28,11 +28,14 @@ function simulate(ps, vs, rs, ms, ξ, t_target, kin_e_target, time_per_frame,
     t_frame_gen = 0.0
 
     n_collisions = 1
+    n_data_points = 1
 
     progress_timer = time()
     progress_interval = 2.0
 
-    while t < t_target && calculate_kin_e(vs, ms) / init_kin_e > kin_e_target
+    while t < t_target &&
+              calculate_kin_e(vs, ms) / init_kin_e > kin_e_target &&
+              n_collisions < collission_target
         timer1 = time()
         ps .+= vs .* Δt
 
@@ -41,10 +44,11 @@ function simulate(ps, vs, rs, ms, ξ, t_target, kin_e_target, time_per_frame,
         update_collisions!(pq, i, t, ps, vs, rs)
         update_collisions!(pq, j, t, ps, vs, rs)
 
-        if collect_data
+        if collect_data && n_collisions % data_interval == 0
             append!(ps_history, ps)
             append!(vs_history, vs)
             push!(t_history, t)
+            n_data_points += 1
         end
 
         (i, j), nt = dequeue_pair!(pq)
@@ -72,6 +76,8 @@ function simulate(ps, vs, rs, ms, ξ, t_target, kin_e_target, time_per_frame,
 
         if timer3 >= progress_timer + progress_interval
             progress_timer += progress_interval
+            println("$n_collisions / $collission_target = ",
+                round(100 * n_collisions / collission_target; digits=2), "%")
             println("$(round(t; digits=4)) / $t_target = ",
                 round(100 * t / t_target; digits=2), "%")
             println("Ek/Ek0: ",
@@ -85,6 +91,7 @@ function simulate(ps, vs, rs, ms, ξ, t_target, kin_e_target, time_per_frame,
         append!(ps_history, ps)
         append!(vs_history, vs)
         push!(t_history, t)
+        n_data_points += 1
     end
 
     if animate
@@ -94,8 +101,8 @@ function simulate(ps, vs, rs, ms, ξ, t_target, kin_e_target, time_per_frame,
     @show t_logic t_frame_gen n_collisions
 
     if collect_data
-        reshape(ps_history, size(ps)..., n_collisions + 1),
-        reshape(vs_history, size(vs)..., n_collisions + 1),
+        reshape(ps_history, size(ps)..., n_data_points),
+        reshape(vs_history, size(vs)..., n_data_points),
         t_history
     end
 end
