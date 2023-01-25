@@ -1,8 +1,10 @@
 
 function simulate(ps, vs, rs, ms, ξ, t_target, kin_e_target, collission_target, time_per_frame,
-    animate, anim_dir, resolution, collect_data, data_interval)
+    animate, color, anim_dir, resolution, collect_data, data_interval)
     println("Initializing PQ:")
     pq = @time init_collisions(ps, vs, rs)
+
+    m_mid = (ms[1] + ms[end]) / 2
 
     ps_history = copy(ps[:])
     vs_history = copy(vs[:])
@@ -19,8 +21,8 @@ function simulate(ps, vs, rs, ms, ξ, t_target, kin_e_target, collission_target,
         mkdir(frames_dir)
 
         img_i, rem_t = animate_line(
-            ps, vs, rs, 0.0, t, time_per_frame, 1,
-            frames_dir, resolution
+            ps, vs, rs, ms, m_mid, 0.0, t, time_per_frame, 1,
+            frames_dir, resolution, color
         )
     end
 
@@ -62,9 +64,8 @@ function simulate(ps, vs, rs, ms, ξ, t_target, kin_e_target, collission_target,
 
         if animate
             img_i, rem_t = animate_line(
-                ps, vs, rs, time_per_frame - rem_t, Δt, time_per_frame, img_i,
-                frames_dir, resolution;
-                include_first=false
+                ps, vs, rs, ms, m_mid, time_per_frame - rem_t, Δt,
+                time_per_frame, img_i, frames_dir, resolution, color
             )
         end
 

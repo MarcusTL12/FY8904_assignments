@@ -27,7 +27,7 @@ function test_crater()
 
     ps_hist, vs_hist, t_hist = simulate(ps, vs, rs, ms, ξ,
         t_target, kin_e_target, Inf,
-        time_per_frame, true, anim_dir, resolution, true, 10)
+        time_per_frame, true, false, anim_dir, resolution, true, 10)
 
     plot_kin_e_history(t_hist, vs_hist, ms)
 end
@@ -51,7 +51,7 @@ function test_gas()
 
     ps_hist, vs_hist, t_hist = simulate(ps, vs, rs, ms, ξ,
         t_target, kin_e_target, Inf,
-        time_per_frame, false, anim_dir, resolution, true, 10)
+        time_per_frame, false, false, anim_dir, resolution, true, 10)
 
     display(plot_v_mean_stddev(t_hist, vs_hist))
     plot()
@@ -86,7 +86,7 @@ function test_inhomogenous_gas()
 
     ps_hist, vs_hist, t_hist = simulate(ps, vs, rs, ms, ξ,
         t_target, kin_e_target, Inf,
-        time_per_frame, false, anim_dir, resolution, true, 10)
+        time_per_frame, false, true, anim_dir, resolution, true, 10)
 
     t_start = 5.0
     n_points = 1000
@@ -126,18 +126,19 @@ function test_inhomogenous_gas_inelastic()
     ξ = 1.0
     t_target = Inf
     kin_e_target = 0.1
-    collision_target = 100n
+    collision_target = 1000n
     time_per_frame = 0.003
     resolution = 1000
 
-    data_interval = cld(n, 10)
+    data_target = 1000
+    data_interval = cld(collision_target, data_target)
     @show data_interval
 
     anim_dir = "assignment-1/tmp_anim/"
 
     ps_hist, vs_hist, t_hist = simulate(ps, vs, rs, ms, ξ,
         t_target, kin_e_target, collision_target,
-        time_per_frame, true, anim_dir, resolution, true, data_interval)
+        time_per_frame, true, true, anim_dir, resolution, true, data_interval)
 
 
     plot(; ylims=[0, 1])
