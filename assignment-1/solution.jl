@@ -33,7 +33,7 @@ function test_crater()
 end
 
 function test_gas()
-    ps, vs, rs, ms = hexgrid_rand_velocities(50, 0.01, 1.0, 1.0)
+    ps, vs, rs, ms = hexgrid_rand_velocities(43, 0.01, 1.0, 1.0)
 
     E = calculate_kin_e(vs, ms)
     n = size(ps, 1)
@@ -44,23 +44,32 @@ function test_gas()
     ξ = 1.0
     t_target = 10.0
     kin_e_target = 0.1
+    collision_target = 100n
     time_per_frame = 0.003
     resolution = 1000
+
+    data_target = 10000
+    data_interval = cld(collision_target, data_target)
+    @show data_interval
 
     anim_dir = "assignment-1/tmp_anim/"
 
     ps_hist, vs_hist, t_hist = simulate(ps, vs, rs, ms, ξ,
-        t_target, kin_e_target, Inf,
-        time_per_frame, false, false, anim_dir, resolution, true, 10)
+        t_target, kin_e_target, collision_target,
+        time_per_frame, false, false, anim_dir, resolution, true, data_interval)
+
+    t_end = t_hist[end]
+    t_start = t_end / 2
+    n_points = 1000
 
     display(plot_v_mean_stddev(t_hist, vs_hist))
     plot()
-    plot_v_dist_window(0.5, t_target, 1000, t_hist, vs_hist)
+    plot_v_dist_window(t_start, t_end, n_points, t_hist, vs_hist)
     plot_theoretical_maxwell_boltzmann(E, m, n, 0.0, 3.0)
 end
 
 function test_inhomogenous_gas()
-    ps, vs, rs, ms = hexgrid_rand_velocities(10, 0.5, 1.0, 1.0)
+    ps, vs, rs, ms = hexgrid_rand_velocities(50, 0.5, 1.0, 1.0)
 
     n = size(ps, 1)
 
@@ -79,7 +88,7 @@ function test_inhomogenous_gas()
     ξ = 1.0
     t_target = Inf
     kin_e_target = 0.1
-    collision_target = 1000n
+    collision_target = 100n
     time_per_frame = 0.003
     resolution = 1000
 
