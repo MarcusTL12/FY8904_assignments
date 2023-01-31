@@ -56,7 +56,7 @@ function test_gas()
 
     ps_hist, vs_hist, t_hist = simulate(ps, vs, rs, ms, ξ,
         t_target, kin_e_target, collision_target,
-        time_per_frame, true, false, anim_dir, resolution, true, data_interval)
+        time_per_frame, false, false, anim_dir, resolution, true, data_interval)
 
     t_end = t_hist[end]
     t_start = t_end / 2
