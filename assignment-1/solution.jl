@@ -33,7 +33,7 @@ function test_crater()
 end
 
 function test_gas()
-    ps, vs, rs, ms = hexgrid_rand_velocities(43, 0.5, 1.0, 1.0)
+    ps, vs, rs, ms = hexgrid_rand_velocities(10, 0.5, 1.0, 1.0)
 
     E = calculate_kin_e(vs, ms)
     n = size(ps, 1)

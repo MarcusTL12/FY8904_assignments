@@ -9,11 +9,15 @@ function do_wall_collision!(i, j, vs, ξ)
 end
 
 # Updates velocities of particle i and j (or only j if i is wall)
-function do_collision!(i, j, ps, vs, ms, ξ)
+function do_collision!(i, j, ps, vs, ms, cs, ξ)
+    cs[j] += 1
+
     if i < 1
         do_wall_collision!(i, j, vs, ξ)
         return
     end
+
+    cs[i] += 1
 
     p_i = Vec((ps[i, 1], ps[i, 2]))
     p_j = Vec((ps[j, 1], ps[j, 2]))

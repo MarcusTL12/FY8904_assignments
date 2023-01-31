@@ -17,8 +17,8 @@ function find_intersection_time(p1x, p1y, p2x, p2y, v1x, v1y, v2x, v2y, r1, r2)
     end
 end
 
-@inline function sorttuple((i, j),)
-    i <= j ? (i, j) : (j, i)
+@inline function sorttuple((i, j, ci, cj),)
+    i <= j ? (i, j, ci, cj) : (j, i, cj, ci)
 end
 
 function delete_occurences!(pq, i, n)
@@ -38,13 +38,7 @@ end
 # -1: left wall     (-x)
 # -2: bottom wall   (+y)
 # -3: top wall      (-y)
-function add_wall_collisions!(pq, i, t, ps, vs, rs)
-    for j in -3:0
-        if haskey(pq, (j, i))
-            delete!(pq, (j, i))
-        end
-    end
-
+function add_wall_collisions!(pq, i, t, ps, vs, rs, cs)
     x = ps[i, 1]
     y = ps[i, 2]
 
@@ -70,12 +64,12 @@ function add_wall_collisions!(pq, i, t, ps, vs, rs)
     end
 
     if isfinite(Δt)
-        ij = (j, i)
+        ij = (j, i, 0, cs[i])
         pq[ij] = t + Δt
     end
 end
 
-function add_disk_collisions!(pq, i, t, ps, vs, rs)
+function add_disk_collisions!(pq, i, t, ps, vs, rs, cs)
     n = size(ps, 1)
 
     for j in 1:n
@@ -85,7 +79,7 @@ function add_disk_collisions!(pq, i, t, ps, vs, rs)
             rs[i], rs[j]
         )
 
-        ij = sorttuple((i, j))
+        ij = sorttuple((i, j, cs[i], cs[j]))
         if isfinite(Δt) && Δt > 0
             pq[ij] = t + Δt
         elseif haskey(pq, ij)
@@ -94,20 +88,33 @@ function add_disk_collisions!(pq, i, t, ps, vs, rs)
     end
 end
 
-function update_collisions!(pq, i, t, ps, vs, rs)
+function update_collisions!(pq, i, t, ps, vs, rs, cs)
     if i >= 1
         # delete_occurences!(pq, i, size(ps, 1))
-        add_wall_collisions!(pq, i, t, ps, vs, rs)
-        add_disk_collisions!(pq, i, t, ps, vs, rs)
+        add_wall_collisions!(pq, i, t, ps, vs, rs, cs)
+        add_disk_collisions!(pq, i, t, ps, vs, rs, cs)
     end
 end
 
 function init_collisions(ps, vs, rs)
-    pq = PriorityQueue{NTuple{2,Int32},Float64}()
+    # Indices of two colliding bodies, their collision count
+    pq = PriorityQueue{NTuple{4,Int32},Float64}()
+
+    cs = zeros(Int32, size(ps, 1))
 
     for i in axes(ps, 1)
-        update_collisions!(pq, i, 0.0, ps, vs, rs)
+        update_collisions!(pq, i, 0.0, ps, vs, rs, cs)
     end
 
-    pq
+    pq, cs
+end
+
+function next_collision!(pq, cs)
+    while true
+        (i, j, ci, cj), t = dequeue_pair!(pq)
+
+        if (i <= 0 || cs[i] == ci) && cs[j] == cj
+            return ((i, j), t)
+        end
+    end
 end

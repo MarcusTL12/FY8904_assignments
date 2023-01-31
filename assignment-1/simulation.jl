@@ -2,7 +2,7 @@
 function simulate(ps, vs, rs, ms, ξ, t_target, kin_e_target, collission_target, time_per_frame,
     animate, color, anim_dir, resolution, collect_data, data_interval)
     println("Initializing PQ:")
-    pq = @time init_collisions(ps, vs, rs)
+    pq, cs = @time init_collisions(ps, vs, rs)
 
     m_mid = (ms[1] + ms[end]) / 2
 
@@ -12,7 +12,7 @@ function simulate(ps, vs, rs, ms, ξ, t_target, kin_e_target, collission_target,
 
     init_kin_e = calculate_kin_e(vs, ms)
 
-    (i, j), t = dequeue_pair!(pq)
+    (i, j), t = next_collision!(pq, cs)
     Δt = t
 
     if animate
@@ -41,10 +41,10 @@ function simulate(ps, vs, rs, ms, ξ, t_target, kin_e_target, collission_target,
         timer1 = time()
         ps .+= vs .* Δt
 
-        do_collision!(i, j, ps, vs, ms, ξ)
+        do_collision!(i, j, ps, vs, ms, cs, ξ)
 
-        update_collisions!(pq, i, t, ps, vs, rs)
-        update_collisions!(pq, j, t, ps, vs, rs)
+        update_collisions!(pq, i, t, ps, vs, rs, cs)
+        update_collisions!(pq, j, t, ps, vs, rs, cs)
 
         if collect_data && n_collisions % data_interval == 0
             append!(ps_history, ps)
@@ -53,7 +53,7 @@ function simulate(ps, vs, rs, ms, ξ, t_target, kin_e_target, collission_target,
             n_data_points += 1
         end
 
-        (i, j), nt = dequeue_pair!(pq)
+        (i, j), nt = next_collision!(pq, cs)
 
         Δt = nt - t
         t = nt
