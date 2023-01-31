@@ -33,7 +33,7 @@ function test_crater()
 end
 
 function test_gas()
-    ps, vs, rs, ms = hexgrid_rand_velocities(10, 0.5, 1.0, 1.0)
+    ps, vs, rs, ms = hexgrid_rand_velocities(43, 0.5, 1.0, 1.0)
 
     E = calculate_kin_e(vs, ms)
     n = size(ps, 1)
@@ -56,7 +56,7 @@ function test_gas()
 
     ps_hist, vs_hist, t_hist = simulate(ps, vs, rs, ms, ξ,
         t_target, kin_e_target, collision_target,
-        time_per_frame, true, false, anim_dir, resolution, true, data_interval)
+        time_per_frame, false, false, anim_dir, resolution, true, data_interval)
 
     t_end = t_hist[end]
     t_start = t_end / 2
