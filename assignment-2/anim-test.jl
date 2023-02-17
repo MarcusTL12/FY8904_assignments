@@ -1,6 +1,5 @@
 using LinearAlgebra
 
-using CairoMakie
 using GLMakie
 
 function make_arrow_figure(lattice_points, spin)
