@@ -1,5 +1,5 @@
 using LinearAlgebra
-
+using StaticArrays
 using GLMakie
 
 function make_arrow_figure(lattice_points, spin)
@@ -62,5 +62,38 @@ function test_anim()
 
     record(f, "tmp.mp4", 1:nt, framerate=60) do i
         ys[] = @view data[:, i]
+    end
+end
+
+function get_spin(ϕ, θ)
+    r = sin(ϕ)
+
+    @SVector [r * cos(θ), r * sin(θ), cos(ϕ)]
+end
+
+function test_spin_anim(n, t_end, nt)
+    xs = 1:n
+    ts = range(0, t_end, nt)
+
+    ϕ = π / 8
+    θ(x, t) = x + t
+
+    t_obs = Observable(0.0)
+
+    spinx = @lift [get_spin(ϕ, θ(x, $t_obs))[1] for x in xs]
+    spiny = @lift [get_spin(ϕ, θ(x, $t_obs))[2] for x in xs]
+    spinz = @lift [get_spin(ϕ, θ(x, $t_obs))[3] for x in xs]
+
+    f = Figure(resolution=(2000, 2000))
+    ax = Axis3(f[1, 1], viewmode=:fitzoom, aspect=:data, perspectiveness=0.5)
+    ylims!(ax, -1, 1)
+    zlims!(ax, -1, 1)
+
+    arrows!(ax, xs, zeros(n), zeros(n), spinx, spiny, spinz;
+        lengthscale=1.0, linewidth=0.05, arrowsize=0.1, color=:gray
+    )
+
+    record(f, "tmp.mp4", ts, framerate=60) do t
+        t_obs[] = t
     end
 end
