@@ -90,10 +90,86 @@ function test_spin_anim(n, t_end, nt)
     zlims!(ax, -1, 1)
 
     arrows!(ax, xs, zeros(n), zeros(n), spinx, spiny, spinz;
-        lengthscale=1.0, linewidth=0.05, arrowsize=0.1, color=:gray
+        lengthscale=0.7, linewidth=0.05, arrowsize=0.1, color=:gray
     )
 
     record(f, "tmp.mp4", ts, framerate=60) do t
         t_obs[] = t
     end
+end
+
+function animate_spin_history(lattice_points, spin_history)
+    f = Figure(resolution=(3840, 2160))
+    ax = Axis3(f[1, 1], viewmode=:fitzoom, aspect=:data, perspectiveness=0.5)
+
+    spinx = Observable(@view spin_history[:, 1, 1])
+    spiny = Observable(@view spin_history[:, 2, 1])
+    spinz = Observable(@view spin_history[:, 3, 1])
+
+    arrows!(ax,
+        (@view lattice_points[:, 1]),
+        (@view lattice_points[:, 2]),
+        (@view lattice_points[:, 3]),
+        spinx, spiny, spinz;
+        lengthscale=1.0, linewidth=0.05, arrowsize=0.1, color=:gray
+    )
+
+    record(f, "tmp.mp4", axes(spin_history, 3), framerate=60) do i
+        spinx[] = @view spin_history[:, 1, i]
+        spiny[] = @view spin_history[:, 2, i]
+        spinz[] = @view spin_history[:, 3, i]
+    end
+end
+
+function make_2d_spin_animation(n, t_end, nt)
+    lattice_points = zeros(n, n, 3)
+
+    for x in 1:n, y in 1:n
+        lattice_points[x, y, 1] = Float64(x)
+        lattice_points[x, y, 2] = Float64(y)
+    end
+
+    lattice_points = reshape(lattice_points, n^2, 3)
+
+    ts = range(0, t_end, nt)
+
+    ϕ = π / 8
+    θ(x, y, t) = x + y / 2 + t
+
+    spin_history = zeros(n, n, 3, nt)
+
+    for (i, t) in enumerate(ts), x in 1:n, y in 1:n
+        spin_history[x, y, :, i] = get_spin(ϕ, θ(x, y, t))
+    end
+
+    spin_history = reshape(spin_history, n^2, 3, nt)
+
+    @time animate_spin_history(lattice_points, spin_history)
+end
+
+function make_3d_spin_animation(n, t_end, nt)
+    lattice_points = zeros(n, n, n, 3)
+
+    for x in 1:n, y in 1:n, z in 1:n
+        lattice_points[x, y, z, 1] = Float64(x)
+        lattice_points[x, y, z, 2] = Float64(y)
+        lattice_points[x, y, z, 3] = Float64(z)
+    end
+
+    lattice_points = reshape(lattice_points, n^3, 3)
+
+    ts = range(0, t_end, nt)
+
+    ϕ = π / 8
+    θ(x, y, z, t) = x + y / 2 + z / 3 + t
+
+    spin_history = zeros(n, n, n, 3, nt)
+
+    for (i, t) in enumerate(ts), x in 1:n, y in 1:n, z in 1:n
+        spin_history[x, y, z, :, i] = get_spin(ϕ, θ(x, y, z, t))
+    end
+
+    spin_history = reshape(spin_history, n^3, 3, nt)
+
+    @time animate_spin_history(lattice_points, spin_history)
 end
