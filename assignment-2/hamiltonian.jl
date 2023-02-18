@@ -79,3 +79,21 @@ end
 function make_H_func(J, dz, B)
     S -> compute_hamiltonian(S, J, dz, B)
 end
+
+function compute_∇H!(∇H, S, J, dz, B)
+    nx, ny, nz, _ = size(S)
+    # Magnetic field
+    @inbounds @fastmath begin
+        fill!((@view ∇H[:, :, :, 1]), B[1])
+        fill!((@view ∇H[:, :, :, 2]), B[2])
+        fill!((@view ∇H[:, :, :, 3]), B[3])
+        
+        # Spin coupling term
+        
+        
+        # Anisotropic term
+        for z in 1:nz, y in 1:ny, x in 1:nx
+            ∇H[x, y, z, 3] -= 2dz * S[x, y, z, 3]
+        end
+    end
+end
