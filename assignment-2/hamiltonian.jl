@@ -38,9 +38,9 @@ function compute_hamiltonian(S, J, dz, B)
 
     H = 0.0
 
-    for z in 1:nz-1
-        for y in 1:ny-1
-            for x in 1:nx-1
+    @simd for z in 1:nz-1
+        @simd for y in 1:ny-1
+            @simd for x in 1:nx-1
                 H += @inline Sdot(S, x, y, z, x + 1, y, z)
                 H += @inline Sdot(S, x, y, z, x, y + 1, z)
                 H += @inline Sdot(S, x, y, z, x, y, z + 1)
@@ -50,7 +50,7 @@ function compute_hamiltonian(S, J, dz, B)
             H += @inline Sdot(S, nx, y, z, nx, y, z + 1)
         end
 
-        for x in 1:nx-1
+        @simd for x in 1:nx-1
             H += @inline Sdot(S, x, ny, z, x + 1, ny, z)
             H += @inline Sdot(S, x, ny, z, x, ny, z + 1)
         end
@@ -58,8 +58,8 @@ function compute_hamiltonian(S, J, dz, B)
         H += @inline Sdot(S, nx, ny, z, nx, ny, z + 1)
     end
 
-    for y in 1:ny-1
-        for x in 1:nx-1
+    @simd for y in 1:ny-1
+        @simd for x in 1:nx-1
             H += @inline Sdot(S, x, y, nz, x + 1, y, nz)
             H += @inline Sdot(S, x, y, nz, x, y + 1, nz)
         end
@@ -67,7 +67,7 @@ function compute_hamiltonian(S, J, dz, B)
         H += @inline Sdot(S, nx, y, nz, nx, y + 1, nz)
     end
 
-    for x in 1:nx-1
+    @simd for x in 1:nx-1
         H += @inline Sdot(S, x, ny, nz, x + 1, ny, nz)
     end
 
