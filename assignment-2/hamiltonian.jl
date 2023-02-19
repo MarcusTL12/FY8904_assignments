@@ -87,10 +87,10 @@ function compute_∇H!(∇H, S, J, dz, B)
         fill!((@view ∇H[:, :, :, 1]), B[1])
         fill!((@view ∇H[:, :, :, 2]), B[2])
         fill!((@view ∇H[:, :, :, 3]), B[3])
-        
+
         # Spin coupling term
-        
-        
+
+
         # Anisotropic term
         for z in 1:nz, y in 1:ny, x in 1:nx
             ∇H[x, y, z, 3] -= 2dz * S[x, y, z, 3]
