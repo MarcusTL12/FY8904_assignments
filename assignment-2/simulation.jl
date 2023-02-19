@@ -21,12 +21,18 @@ struct SimParams
     Δt::Float64
 end
 
+function init_state(S)
+    SimState(S, similar(S), similar(S), similar(S), randn(size(S)), similar(S))
+end
+
 function compute_∂S!(∂S, S, Γ, params::SimParams)
     compute_∂S!(∂S, S, params.J, params.dz, params.B, params.α, params.γ,
         params.μ, params.kT, params.Δt, Γ)
 end
 
 function do_heun_step!(state::SimState, params::SimParams)
+    Γ_task = Threads.@spawn randn!(state.Γ2)
+
     # f(tn, yn)
     compute_∂S!(state.∂S, state.S, state.Γ1, params)
 
@@ -35,7 +41,7 @@ function do_heun_step!(state::SimState, params::SimParams)
         state.Sp[i] = state.S[i] + state.∂S[i] * params.Δt
     end
 
-    randn!(state.Γ2)
+    wait(Γ_task)
 
     # f(tn+1, ypn+1)
     compute_∂S!(state.∂Sp, state.Sp, state.Γ2, params)
