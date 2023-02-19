@@ -109,9 +109,9 @@ function compute_∇H!(∇H, S, J, dz, B)
     nx, ny, nz, _ = size(S)
     # Magnetic field
     @inbounds @fastmath begin
-        fill!((@view ∇H[:, :, :, 1]), B[1])
-        fill!((@view ∇H[:, :, :, 2]), B[2])
-        fill!((@view ∇H[:, :, :, 3]), B[3])
+        fill!((@view ∇H[:, :, :, 1]), -B[1])
+        fill!((@view ∇H[:, :, :, 2]), -B[2])
+        fill!((@view ∇H[:, :, :, 3]), -B[3])
 
         # Spin coupling term
         @simd for z in 1:nz-1
