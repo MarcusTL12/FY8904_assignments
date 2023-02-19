@@ -269,8 +269,32 @@ function add_spin_coupling_term_simd!(∇H, S, J, nx, ny, nz)
     @inline add_grad_contrib!(∇H, S, J, nx, ny, nz, nx, ny, 1)
 end
 
-function add_thermal_noise(∇H, c)
+function add_thermal_noise!(∇H, c)
     for i in eachindex(∇H)
         ∇H[i] += c * randn()
+    end
+end
+
+function cross_spin!(∇H, S)
+    nx, ny, nz, _ = size(S)
+
+    @inbounds begin
+        @simd for z in 1:nz
+            @simd for y in 1:ny
+                @simd for x in 1:nx
+                    Sx = S[x, y, z, 1]
+                    Sy = S[x, y, z, 2]
+                    Sz = S[x, y, z, 3]
+
+                    Hx = ∇H[x, y, z, 1]
+                    Hy = ∇H[x, y, z, 2]
+                    Hz = ∇H[x, y, z, 3]
+
+                    ∇H[x, y, z, 1] = Sy * Hz - Sz * Hy
+                    ∇H[x, y, z, 2] = Sz * Hx - Sx * Hz
+                    ∇H[x, y, z, 3] = Sx * Hy - Sy * Hx
+                end
+            end
+        end
     end
 end
