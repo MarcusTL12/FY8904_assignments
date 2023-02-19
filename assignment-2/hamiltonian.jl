@@ -278,7 +278,7 @@ end
 function cross_spin!(∇H, S)
     nx, ny, nz, _ = size(S)
 
-    @inbounds begin
+    @inbounds @fastmath begin
         @simd for z in 1:nz
             @simd for y in 1:ny
                 @simd for x in 1:nx
@@ -295,6 +295,54 @@ function cross_spin!(∇H, S)
                     ∇H[x, y, z, 3] = Sx * Hy - Sy * Hx
                 end
             end
+        end
+    end
+end
+
+function cross_spin_simd!(∇H, S)
+    nx, ny, nz, _ = size(S)
+    n = nx * ny * nz
+
+    Hxs = @view ∇H[:, :, :, 1]
+    Hys = @view ∇H[:, :, :, 2]
+    Hzs = @view ∇H[:, :, :, 3]
+
+    Sxs = @view S[:, :, :, 1]
+    Sys = @view S[:, :, :, 2]
+    Szs = @view S[:, :, :, 3]
+
+    N = 8
+    lane = VecRange{N}(0)
+    iv, ir = range_chunks(1:n, N)
+
+    @inbounds @fastmath begin
+        for i in iv
+            il = lane + i
+            Sx = Sxs[il]
+            Sy = Sys[il]
+            Sz = Szs[il]
+
+            Hx = Hxs[il]
+            Hy = Hys[il]
+            Hz = Hzs[il]
+
+            Hxs[il] = Sy * Hz - Sz * Hy
+            Hys[il] = Sz * Hx - Sx * Hz
+            Hzs[il] = Sx * Hy - Sy * Hx
+        end
+
+        for i in ir
+            Sx = Sxs[i]
+            Sy = Sys[i]
+            Sz = Szs[i]
+
+            Hx = Hxs[i]
+            Hy = Hys[i]
+            Hz = Hzs[i]
+
+            Hxs[i] = Sy * Hz - Sz * Hy
+            Hys[i] = Sz * Hx - Sx * Hz
+            Hzs[i] = Sx * Hy - Sy * Hx
         end
     end
 end
