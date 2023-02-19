@@ -5,6 +5,7 @@ mutable struct SimState
     S::Array{Float64,4}
     Sp::Array{Float64,4}
     ∂S::Array{Float64,4}
+    ∂Sp::Array{Float64,4}
     Γ1::Array{Float64,4}
     Γ2::Array{Float64,4}
 end
@@ -26,5 +27,29 @@ function compute_∂S!(∂S, S, Γ, params::SimParams)
 end
 
 function do_heun_step!(state::SimState, params::SimParams)
+    # f(tn, yn)
     compute_∂S!(state.∂S, state.S, state.Γ1, params)
+
+    # ypn+1
+    @inbounds @simd for i in eachindex(state.S)
+        state.Sp[i] = state.S[i] + state.∂S[i] * params.Δt
+    end
+
+    randn!(state.Γ2)
+
+    # f(tn+1, ypn+1)
+    compute_∂S!(state.∂Sp, state.Sp, state.Γ2, params)
+
+    # 0.5 Δt (f(tn, yn) + f(tn+1, ypn+1))
+    c = 0.5 * params.Δt
+    for i in eachindex(state.S)
+        state.∂S[i] = c * (state.∂S[i] + state.∂Sp[i])
+    end
+
+    # yn+1
+    @inbounds @simd for i in eachindex(state.S)
+        state.S[i] = state.S[i] + state.∂S[i]
+    end
+
+    state.Γ1, state.Γ2 = state.Γ2, state.Γ1
 end
