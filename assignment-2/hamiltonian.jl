@@ -268,3 +268,9 @@ function add_spin_coupling_term_simd!(∇H, S, J, nx, ny, nz)
     @inline add_grad_contrib!(∇H, S, J, nx, ny, nz, nx, 1, nz)
     @inline add_grad_contrib!(∇H, S, J, nx, ny, nz, nx, ny, 1)
 end
+
+function add_thermal_noise(∇H, c)
+    for i in eachindex(∇H)
+        ∇H[i] += c * randn()
+    end
+end
