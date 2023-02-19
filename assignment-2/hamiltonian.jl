@@ -1,6 +1,6 @@
 using LinearAlgebra
 using ForwardDiff
-using ReverseDiff
+using SIMD
 
 function compute_hamiltonian_anisotropy(S, dz)
     H = 0.0
@@ -93,16 +93,64 @@ function make_H_func(J, dz, B)
     S -> compute_hamiltonian(S, J, dz, B)
 end
 
-function add_grad_contrib!(∇H, S, J, x1, y1, z1, x2, y2, z2)
-    @inbounds @fastmath begin
-        ∇H[x1, y1, z1, 1] -= J * S[x2, y2, z2, 1]
-        ∇H[x1, y1, z1, 2] -= J * S[x2, y2, z2, 2]
-        ∇H[x1, y1, z1, 3] -= J * S[x2, y2, z2, 3]
+function add_spin_coupling_term!(∇H, S, J, nx, ny, nz)
+    function add_grad_contrib!(∇H, S, J, x1, y1, z1, x2, y2, z2)
+        @inbounds @fastmath begin
+            ∇H[x1, y1, z1, 1] -= J * S[x2, y2, z2, 1]
+            ∇H[x1, y1, z1, 2] -= J * S[x2, y2, z2, 2]
+            ∇H[x1, y1, z1, 3] -= J * S[x2, y2, z2, 3]
 
-        ∇H[x2, y2, z2, 1] -= J * S[x1, y1, z1, 1]
-        ∇H[x2, y2, z2, 2] -= J * S[x1, y1, z1, 2]
-        ∇H[x2, y2, z2, 3] -= J * S[x1, y1, z1, 3]
+            ∇H[x2, y2, z2, 1] -= J * S[x1, y1, z1, 1]
+            ∇H[x2, y2, z2, 2] -= J * S[x1, y1, z1, 2]
+            ∇H[x2, y2, z2, 3] -= J * S[x1, y1, z1, 3]
+        end
     end
+
+    @simd for z in 1:nz-1
+        @simd for y in 1:ny-1
+            @simd for x in 1:nx-1
+                @inline add_grad_contrib!(∇H, S, J, x, y, z, x + 1, y, z)
+                @inline add_grad_contrib!(∇H, S, J, x, y, z, x, y + 1, z)
+                @inline add_grad_contrib!(∇H, S, J, x, y, z, x, y, z + 1)
+            end
+
+            @inline add_grad_contrib!(∇H, S, J, nx, y, z, 1, y, z)
+            @inline add_grad_contrib!(∇H, S, J, nx, y, z, nx, y + 1, z)
+            @inline add_grad_contrib!(∇H, S, J, nx, y, z, nx, y, z + 1)
+        end
+
+        @simd for x in 1:nx-1
+            @inline add_grad_contrib!(∇H, S, J, x, ny, z, x + 1, ny, z)
+            @inline add_grad_contrib!(∇H, S, J, x, ny, z, x, 1, z)
+            @inline add_grad_contrib!(∇H, S, J, x, ny, z, x, ny, z + 1)
+        end
+
+        @inline add_grad_contrib!(∇H, S, J, nx, ny, z, 1, ny, z)
+        @inline add_grad_contrib!(∇H, S, J, nx, ny, z, nx, 1, z)
+        @inline add_grad_contrib!(∇H, S, J, nx, ny, z, nx, ny, z + 1)
+    end
+
+    @simd for y in 1:ny-1
+        @simd for x in 1:nx-1
+            @inline add_grad_contrib!(∇H, S, J, x, y, nz, x + 1, y, nz)
+            @inline add_grad_contrib!(∇H, S, J, x, y, nz, x, y + 1, nz)
+            @inline add_grad_contrib!(∇H, S, J, x, y, nz, x, y, 1)
+        end
+
+        @inline add_grad_contrib!(∇H, S, J, nx, y, nz, 1, y, nz)
+        @inline add_grad_contrib!(∇H, S, J, nx, y, nz, nx, y + 1, nz)
+        @inline add_grad_contrib!(∇H, S, J, nx, y, nz, nx, y, 1)
+    end
+
+    @simd for x in 1:nx-1
+        @inline add_grad_contrib!(∇H, S, J, x, ny, nz, x + 1, ny, nz)
+        @inline add_grad_contrib!(∇H, S, J, x, ny, nz, x, 1, nz)
+        @inline add_grad_contrib!(∇H, S, J, x, ny, nz, x, ny, 1)
+    end
+
+    @inline add_grad_contrib!(∇H, S, J, nx, ny, nz, 1, ny, nz)
+    @inline add_grad_contrib!(∇H, S, J, nx, ny, nz, nx, 1, nz)
+    @inline add_grad_contrib!(∇H, S, J, nx, ny, nz, nx, ny, 1)
 end
 
 function compute_∇H!(∇H, S, J, dz, B)
@@ -114,55 +162,109 @@ function compute_∇H!(∇H, S, J, dz, B)
         fill!((@view ∇H[:, :, :, 3]), -B[3])
 
         # Spin coupling term
-        @simd for z in 1:nz-1
-            @simd for y in 1:ny-1
-                @simd for x in 1:nx-1
-                    @inline add_grad_contrib!(∇H, S, J, x, y, z, x + 1, y, z)
-                    @inline add_grad_contrib!(∇H, S, J, x, y, z, x, y + 1, z)
-                    @inline add_grad_contrib!(∇H, S, J, x, y, z, x, y, z + 1)
-                end
-
-                @inline add_grad_contrib!(∇H, S, J, nx, y, z, 1, y, z)
-                @inline add_grad_contrib!(∇H, S, J, nx, y, z, nx, y + 1, z)
-                @inline add_grad_contrib!(∇H, S, J, nx, y, z, nx, y, z + 1)
-            end
-
-            @simd for x in 1:nx-1
-                @inline add_grad_contrib!(∇H, S, J, x, ny, z, x + 1, ny, z)
-                @inline add_grad_contrib!(∇H, S, J, x, ny, z, x, 1, z)
-                @inline add_grad_contrib!(∇H, S, J, x, ny, z, x, ny, z + 1)
-            end
-
-            @inline add_grad_contrib!(∇H, S, J, nx, ny, z, 1, ny, z)
-            @inline add_grad_contrib!(∇H, S, J, nx, ny, z, nx, 1, z)
-            @inline add_grad_contrib!(∇H, S, J, nx, ny, z, nx, ny, z + 1)
-        end
-
-        @simd for y in 1:ny-1
-            @simd for x in 1:nx-1
-                @inline add_grad_contrib!(∇H, S, J, x, y, nz, x + 1, y, nz)
-                @inline add_grad_contrib!(∇H, S, J, x, y, nz, x, y + 1, nz)
-                @inline add_grad_contrib!(∇H, S, J, x, y, nz, x, y, 1)
-            end
-
-            @inline add_grad_contrib!(∇H, S, J, nx, y, nz, 1, y, nz)
-            @inline add_grad_contrib!(∇H, S, J, nx, y, nz, nx, y + 1, nz)
-            @inline add_grad_contrib!(∇H, S, J, nx, y, nz, nx, y, 1)
-        end
-
-        @simd for x in 1:nx-1
-            @inline add_grad_contrib!(∇H, S, J, x, ny, nz, x + 1, ny, nz)
-            @inline add_grad_contrib!(∇H, S, J, x, ny, nz, x, 1, nz)
-            @inline add_grad_contrib!(∇H, S, J, x, ny, nz, x, ny, 1)
-        end
-
-        @inline add_grad_contrib!(∇H, S, J, nx, ny, nz, 1, ny, nz)
-        @inline add_grad_contrib!(∇H, S, J, nx, ny, nz, nx, 1, nz)
-        @inline add_grad_contrib!(∇H, S, J, nx, ny, nz, nx, ny, 1)
+        @inline add_spin_coupling_term_simd!(∇H, S, J, nx, ny, nz)
 
         # Anisotropic term
         for z in 1:nz, y in 1:ny, x in 1:nx
             ∇H[x, y, z, 3] -= 2dz * S[x, y, z, 3]
         end
     end
+end
+
+function range_chunks(r, n)
+    rv = @inbounds r[1:n:end-(n-1)]
+    rr = @inbounds r[length(rv)*n+1:end]
+    rv, rr
+end
+
+function add_spin_coupling_term_simd!(∇H, S, J, nx, ny, nz)
+    function add_grad_contrib!(∇H, S, J, x1, y1, z1, x2, y2, z2)
+        @inbounds @fastmath begin
+            ∇H[x1, y1, z1, 1] -= J * S[x2, y2, z2, 1]
+            ∇H[x1, y1, z1, 2] -= J * S[x2, y2, z2, 2]
+            ∇H[x1, y1, z1, 3] -= J * S[x2, y2, z2, 3]
+
+            ∇H[x2, y2, z2, 1] -= J * S[x1, y1, z1, 1]
+            ∇H[x2, y2, z2, 2] -= J * S[x1, y1, z1, 2]
+            ∇H[x2, y2, z2, 3] -= J * S[x1, y1, z1, 3]
+        end
+    end
+
+    N = 8
+    lane = VecRange{N}(0)
+    xv, xr = range_chunks(1:nx-1, N)
+
+    for z in 1:nz-1
+        for y in 1:ny-1
+            for x in xv
+                xl = lane + x
+                @inline add_grad_contrib!(∇H, S, J, xl, y, z, xl + 1, y, z)
+                @inline add_grad_contrib!(∇H, S, J, xl, y, z, xl, y + 1, z)
+                @inline add_grad_contrib!(∇H, S, J, xl, y, z, xl, y, z + 1)
+            end
+
+            for x in xr
+                @inline add_grad_contrib!(∇H, S, J, x, y, z, x + 1, y, z)
+                @inline add_grad_contrib!(∇H, S, J, x, y, z, x, y + 1, z)
+                @inline add_grad_contrib!(∇H, S, J, x, y, z, x, y, z + 1)
+            end
+
+            @inline add_grad_contrib!(∇H, S, J, nx, y, z, 1, y, z)
+            @inline add_grad_contrib!(∇H, S, J, nx, y, z, nx, y + 1, z)
+            @inline add_grad_contrib!(∇H, S, J, nx, y, z, nx, y, z + 1)
+        end
+
+        for x in xv
+            xl = lane + x
+            @inline add_grad_contrib!(∇H, S, J, xl, ny, z, xl + 1, ny, z)
+            @inline add_grad_contrib!(∇H, S, J, xl, ny, z, xl, 1, z)
+            @inline add_grad_contrib!(∇H, S, J, xl, ny, z, xl, ny, z + 1)
+        end
+
+        for x in xr
+            @inline add_grad_contrib!(∇H, S, J, x, ny, z, x + 1, ny, z)
+            @inline add_grad_contrib!(∇H, S, J, x, ny, z, x, 1, z)
+            @inline add_grad_contrib!(∇H, S, J, x, ny, z, x, ny, z + 1)
+        end
+
+        @inline add_grad_contrib!(∇H, S, J, nx, ny, z, 1, ny, z)
+        @inline add_grad_contrib!(∇H, S, J, nx, ny, z, nx, 1, z)
+        @inline add_grad_contrib!(∇H, S, J, nx, ny, z, nx, ny, z + 1)
+    end
+
+    for y in 1:ny-1
+        for x in xv
+            xl = lane + x
+            @inline add_grad_contrib!(∇H, S, J, xl, y, nz, xl + 1, y, nz)
+            @inline add_grad_contrib!(∇H, S, J, xl, y, nz, xl, y + 1, nz)
+            @inline add_grad_contrib!(∇H, S, J, xl, y, nz, xl, y, 1)
+        end
+
+        for x in xr
+            @inline add_grad_contrib!(∇H, S, J, x, y, nz, x + 1, y, nz)
+            @inline add_grad_contrib!(∇H, S, J, x, y, nz, x, y + 1, nz)
+            @inline add_grad_contrib!(∇H, S, J, x, y, nz, x, y, 1)
+        end
+
+        @inline add_grad_contrib!(∇H, S, J, nx, y, nz, 1, y, nz)
+        @inline add_grad_contrib!(∇H, S, J, nx, y, nz, nx, y + 1, nz)
+        @inline add_grad_contrib!(∇H, S, J, nx, y, nz, nx, y, 1)
+    end
+
+    for x in xv
+        xl = lane + x
+        @inline add_grad_contrib!(∇H, S, J, xl, ny, nz, xl + 1, ny, nz)
+        @inline add_grad_contrib!(∇H, S, J, xl, ny, nz, xl, 1, nz)
+        @inline add_grad_contrib!(∇H, S, J, xl, ny, nz, xl, ny, 1)
+    end
+
+    for x in xr
+        @inline add_grad_contrib!(∇H, S, J, x, ny, nz, x + 1, ny, nz)
+        @inline add_grad_contrib!(∇H, S, J, x, ny, nz, x, 1, nz)
+        @inline add_grad_contrib!(∇H, S, J, x, ny, nz, x, ny, 1)
+    end
+
+    @inline add_grad_contrib!(∇H, S, J, nx, ny, nz, 1, ny, nz)
+    @inline add_grad_contrib!(∇H, S, J, nx, ny, nz, nx, 1, nz)
+    @inline add_grad_contrib!(∇H, S, J, nx, ny, nz, nx, ny, 1)
 end
