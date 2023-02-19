@@ -365,7 +365,7 @@ function double_cross_spin_simd!(∇H, S, α, γ, μ)
     end
 end
 
-function double_cross_spin!(∇H, S, α, γ, μ, k)
+function double_cross_spin!(∇H, S, α, γ, μ, k, Γ)
     @inbounds @fastmath begin
         nx, ny, nz, _ = size(S)
         n = nx * ny * nz
@@ -378,6 +378,10 @@ function double_cross_spin!(∇H, S, α, γ, μ, k)
         Sys = @view S[:, :, :, 2]
         Szs = @view S[:, :, :, 3]
 
+        Γxs = @view Γ[:, :, :, 1]
+        Γys = @view Γ[:, :, :, 2]
+        Γzs = @view Γ[:, :, :, 3]
+
         c = -γ / (1 + α^2)
         m = -1 / μ
 
@@ -386,9 +390,9 @@ function double_cross_spin!(∇H, S, α, γ, μ, k)
             Sy = Sys[i]
             Sz = Szs[i]
 
-            Hx = Hxs[i] * m + k * randn()
-            Hy = Hys[i] * m + k * randn()
-            Hz = Hzs[i] * m + k * randn()
+            Hx = Hxs[i] * m + k * Γxs[i]
+            Hy = Hys[i] * m + k * Γys[i]
+            Hz = Hzs[i] * m + k * Γzs[i]
 
             cx = Sy * Hz - Sz * Hy
             cy = Sz * Hx - Sx * Hz
@@ -401,7 +405,7 @@ function double_cross_spin!(∇H, S, α, γ, μ, k)
     end
 end
 
-function double_cross_spin_simd!(∇H, S, α, γ, μ, k)
+function double_cross_spin_simd!(∇H, S, α, γ, μ, k, Γ)
     @inbounds @fastmath begin
         nx, ny, nz, _ = size(S)
         n = nx * ny * nz
@@ -414,17 +418,16 @@ function double_cross_spin_simd!(∇H, S, α, γ, μ, k)
         Sys = @view S[:, :, :, 2]
         Szs = @view S[:, :, :, 3]
 
+        Γxs = @view Γ[:, :, :, 1]
+        Γys = @view Γ[:, :, :, 2]
+        Γzs = @view Γ[:, :, :, 3]
+
         N = 8
         lane = VecRange{N}(0)
         iv, ir = range_chunks(1:n, N)
 
         c = -γ / (1 + α^2)
         m = -1 / μ
-
-        randn8() = Vec(
-            randn(), randn(), randn(), randn(),
-            randn(), randn(), randn(), randn()
-        )
 
         for i in iv
             il = lane + i
@@ -433,9 +436,9 @@ function double_cross_spin_simd!(∇H, S, α, γ, μ, k)
             Sy = Sys[il]
             Sz = Szs[il]
 
-            Hx = Hxs[il] * m + randn8() * k
-            Hy = Hys[il] * m + randn8() * k
-            Hz = Hzs[il] * m + randn8() * k
+            Hx = Hxs[il] * m + k * Γxs[il]
+            Hy = Hys[il] * m + k * Γys[il]
+            Hz = Hzs[il] * m + k * Γzs[il]
 
             cx = Sy * Hz - Sz * Hy
             cy = Sz * Hx - Sx * Hz
@@ -451,9 +454,9 @@ function double_cross_spin_simd!(∇H, S, α, γ, μ, k)
             Sy = Sys[i]
             Sz = Szs[i]
 
-            Hx = Hxs[i] * m + k * randn()
-            Hy = Hys[i] * m + k * randn()
-            Hz = Hzs[i] * m + k * randn()
+            Hx = Hxs[i] * m + k * Γxs[i]
+            Hy = Hys[i] * m + k * Γys[i]
+            Hz = Hzs[i] * m + k * Γzs[i]
 
             cx = Sy * Hz - Sz * Hy
             cy = Sz * Hx - Sx * Hz
@@ -471,9 +474,9 @@ function compute_∂S!(∂S, S, J, dz, B, α, γ, μ)
     @inline double_cross_spin_simd!(∂S, S, α, γ, μ)
 end
 
-function compute_∂S!(∂S, S, J, dz, B, α, γ, μ, kT, Δt)
+function compute_∂S!(∂S, S, J, dz, B, α, γ, μ, kT, Δt, Γ)
     k = √(2α * kT / (γ * μ * Δt))
 
     @inline compute_∇H!(∂S, S, J, dz, B)
-    @inline double_cross_spin_simd!(∂S, S, α, γ, μ, k)
+    @inline double_cross_spin_simd!(∂S, S, α, γ, μ, k, Γ)
 end
