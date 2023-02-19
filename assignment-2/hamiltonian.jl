@@ -80,6 +80,10 @@ function compute_hamiltonian(S, J, dz, B)
         H += @inline Sdot(S, x, ny, nz, x, ny, 1)
     end
 
+    H += @inline Sdot(S, nx, ny, nz, 1, ny, nz)
+    H += @inline Sdot(S, nx, ny, nz, nx, 1, nz)
+    H += @inline Sdot(S, nx, ny, nz, nx, ny, 1)
+
     -J * H +
     @inline compute_hamiltonian_anisotropy(S_linear, dz) +
             @inline compute_hamiltonian_magnetic_field(S_linear, B)
