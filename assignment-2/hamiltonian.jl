@@ -93,6 +93,18 @@ function make_H_func(J, dz, B)
     S -> compute_hamiltonian(S, J, dz, B)
 end
 
+function add_grad_contrib!(∇H, S, J, x1, y1, z1, x2, y2, z2)
+    @inbounds @fastmath begin
+        ∇H[x1, y1, z1, 1] -= J * S[x2, y2, z2, 1]
+        ∇H[x1, y1, z1, 2] -= J * S[x2, y2, z2, 2]
+        ∇H[x1, y1, z1, 3] -= J * S[x2, y2, z2, 3]
+
+        ∇H[x2, y2, z2, 1] -= J * S[x1, y1, z1, 1]
+        ∇H[x2, y2, z2, 2] -= J * S[x1, y1, z1, 2]
+        ∇H[x2, y2, z2, 3] -= J * S[x1, y1, z1, 3]
+    end
+end
+
 function compute_∇H!(∇H, S, J, dz, B)
     nx, ny, nz, _ = size(S)
     # Magnetic field
@@ -102,7 +114,51 @@ function compute_∇H!(∇H, S, J, dz, B)
         fill!((@view ∇H[:, :, :, 3]), B[3])
 
         # Spin coupling term
+        @simd for z in 1:nz-1
+            @simd for y in 1:ny-1
+                @simd for x in 1:nx-1
+                    @inline add_grad_contrib!(∇H, S, J, x, y, z, x + 1, y, z)
+                    @inline add_grad_contrib!(∇H, S, J, x, y, z, x, y + 1, z)
+                    @inline add_grad_contrib!(∇H, S, J, x, y, z, x, y, z + 1)
+                end
 
+                @inline add_grad_contrib!(∇H, S, J, nx, y, z, 1, y, z)
+                @inline add_grad_contrib!(∇H, S, J, nx, y, z, nx, y + 1, z)
+                @inline add_grad_contrib!(∇H, S, J, nx, y, z, nx, y, z + 1)
+            end
+
+            @simd for x in 1:nx-1
+                @inline add_grad_contrib!(∇H, S, J, x, ny, z, x + 1, ny, z)
+                @inline add_grad_contrib!(∇H, S, J, x, ny, z, x, 1, z)
+                @inline add_grad_contrib!(∇H, S, J, x, ny, z, x, ny, z + 1)
+            end
+
+            @inline add_grad_contrib!(∇H, S, J, nx, ny, z, 1, ny, z)
+            @inline add_grad_contrib!(∇H, S, J, nx, ny, z, nx, 1, z)
+            @inline add_grad_contrib!(∇H, S, J, nx, ny, z, nx, ny, z + 1)
+        end
+
+        @simd for y in 1:ny-1
+            @simd for x in 1:nx-1
+                @inline add_grad_contrib!(∇H, S, J, x, y, nz, x + 1, y, nz)
+                @inline add_grad_contrib!(∇H, S, J, x, y, nz, x, y + 1, nz)
+                @inline add_grad_contrib!(∇H, S, J, x, y, nz, x, y, 1)
+            end
+
+            @inline add_grad_contrib!(∇H, S, J, nx, y, nz, 1, y, nz)
+            @inline add_grad_contrib!(∇H, S, J, nx, y, nz, nx, y + 1, nz)
+            @inline add_grad_contrib!(∇H, S, J, nx, y, nz, nx, y, 1)
+        end
+
+        @simd for x in 1:nx-1
+            @inline add_grad_contrib!(∇H, S, J, x, ny, nz, x + 1, ny, nz)
+            @inline add_grad_contrib!(∇H, S, J, x, ny, nz, x, 1, nz)
+            @inline add_grad_contrib!(∇H, S, J, x, ny, nz, x, ny, 1)
+        end
+
+        @inline add_grad_contrib!(∇H, S, J, nx, ny, nz, 1, ny, nz)
+        @inline add_grad_contrib!(∇H, S, J, nx, ny, nz, nx, 1, nz)
+        @inline add_grad_contrib!(∇H, S, J, nx, ny, nz, nx, ny, 1)
 
         # Anisotropic term
         for z in 1:nz, y in 1:ny, x in 1:nx
