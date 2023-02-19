@@ -346,3 +346,95 @@ function cross_spin_simd!(∇H, S)
         end
     end
 end
+
+function double_cross_spin!(∇H, S, a)
+    @inbounds @fastmath begin
+        nx, ny, nz, _ = size(S)
+        n = nx * ny * nz
+
+        Hxs = @view ∇H[:, :, :, 1]
+        Hys = @view ∇H[:, :, :, 2]
+        Hzs = @view ∇H[:, :, :, 3]
+
+        Sxs = @view S[:, :, :, 1]
+        Sys = @view S[:, :, :, 2]
+        Szs = @view S[:, :, :, 3]
+
+        @simd for i in 1:n
+            Sx = Sxs[i]
+            Sy = Sys[i]
+            Sz = Szs[i]
+
+            Hx = Hxs[i]
+            Hy = Hys[i]
+            Hz = Hzs[i]
+
+            cx = Sy * Hz - Sz * Hy
+            cy = Sz * Hx - Sx * Hz
+            cz = Sx * Hy - Sy * Hx
+
+            Hxs[i] = cx + a * (Sy * cz - Sz * cy)
+            Hys[i] = cy + a * (Sz * cx - Sx * cz)
+            Hzs[i] = cz + a * (Sx * cy - Sy * cx)
+        end
+    end
+end
+
+function double_cross_spin_simd!(∇H, S, a, g)
+    @inbounds @fastmath begin
+        nx, ny, nz, _ = size(S)
+        n = nx * ny * nz
+
+        Hxs = @view ∇H[:, :, :, 1]
+        Hys = @view ∇H[:, :, :, 2]
+        Hzs = @view ∇H[:, :, :, 3]
+
+        Sxs = @view S[:, :, :, 1]
+        Sys = @view S[:, :, :, 2]
+        Szs = @view S[:, :, :, 3]
+
+        N = 8
+        lane = VecRange{N}(0)
+        iv, ir = range_chunks(1:n, N)
+
+        c = -g / (1 + a^2)
+
+        for i in iv
+            il = lane + i
+
+            Sx = Sxs[il]
+            Sy = Sys[il]
+            Sz = Szs[il]
+
+            Hx = Hxs[il]
+            Hy = Hys[il]
+            Hz = Hzs[il]
+
+            cx = Sy * Hz - Sz * Hy
+            cy = Sz * Hx - Sx * Hz
+            cz = Sx * Hy - Sy * Hx
+
+            Hxs[il] = cx + a * (Sy * cz - Sz * cy)
+            Hys[il] = cy + a * (Sz * cx - Sx * cz)
+            Hzs[il] = cz + a * (Sx * cy - Sy * cx)
+        end
+
+        for i in ir
+            Sx = Sxs[i]
+            Sy = Sys[i]
+            Sz = Szs[i]
+
+            Hx = Hxs[i]
+            Hy = Hys[i]
+            Hz = Hzs[i]
+
+            cx = Sy * Hz - Sz * Hy
+            cy = Sz * Hx - Sx * Hz
+            cz = Sx * Hy - Sy * Hx
+
+            Hxs[i] = c * (cx + a * (Sy * cz - Sz * cy))
+            Hys[i] = c * (cy + a * (Sz * cx - Sx * cz))
+            Hzs[i] = c * (cz + a * (Sx * cy - Sy * cx))
+        end
+    end
+end
