@@ -269,85 +269,7 @@ function add_spin_coupling_term_simd!(∇H, S, J, nx, ny, nz)
     @inline add_grad_contrib!(∇H, S, J, nx, ny, nz, nx, ny, 1)
 end
 
-function add_thermal_noise!(∇H, c)
-    for i in eachindex(∇H)
-        ∇H[i] += c * randn()
-    end
-end
-
-function cross_spin!(∇H, S)
-    nx, ny, nz, _ = size(S)
-
-    @inbounds @fastmath begin
-        @simd for z in 1:nz
-            @simd for y in 1:ny
-                @simd for x in 1:nx
-                    Sx = S[x, y, z, 1]
-                    Sy = S[x, y, z, 2]
-                    Sz = S[x, y, z, 3]
-
-                    Hx = ∇H[x, y, z, 1]
-                    Hy = ∇H[x, y, z, 2]
-                    Hz = ∇H[x, y, z, 3]
-
-                    ∇H[x, y, z, 1] = Sy * Hz - Sz * Hy
-                    ∇H[x, y, z, 2] = Sz * Hx - Sx * Hz
-                    ∇H[x, y, z, 3] = Sx * Hy - Sy * Hx
-                end
-            end
-        end
-    end
-end
-
-function cross_spin_simd!(∇H, S)
-    nx, ny, nz, _ = size(S)
-    n = nx * ny * nz
-
-    Hxs = @view ∇H[:, :, :, 1]
-    Hys = @view ∇H[:, :, :, 2]
-    Hzs = @view ∇H[:, :, :, 3]
-
-    Sxs = @view S[:, :, :, 1]
-    Sys = @view S[:, :, :, 2]
-    Szs = @view S[:, :, :, 3]
-
-    N = 8
-    lane = VecRange{N}(0)
-    iv, ir = range_chunks(1:n, N)
-
-    @inbounds @fastmath begin
-        for i in iv
-            il = lane + i
-            Sx = Sxs[il]
-            Sy = Sys[il]
-            Sz = Szs[il]
-
-            Hx = Hxs[il]
-            Hy = Hys[il]
-            Hz = Hzs[il]
-
-            Hxs[il] = Sy * Hz - Sz * Hy
-            Hys[il] = Sz * Hx - Sx * Hz
-            Hzs[il] = Sx * Hy - Sy * Hx
-        end
-
-        for i in ir
-            Sx = Sxs[i]
-            Sy = Sys[i]
-            Sz = Szs[i]
-
-            Hx = Hxs[i]
-            Hy = Hys[i]
-            Hz = Hzs[i]
-
-            Hxs[i] = Sy * Hz - Sz * Hy
-            Hys[i] = Sz * Hx - Sx * Hz
-            Hzs[i] = Sx * Hy - Sy * Hx
-        end
-    end
-end
-
-function double_cross_spin!(∇H, S, a)
+function double_cross_spin!(∇H, S, α, γ, μ)
     @inbounds @fastmath begin
         nx, ny, nz, _ = size(S)
         n = nx * ny * nz
@@ -360,27 +282,30 @@ function double_cross_spin!(∇H, S, a)
         Sys = @view S[:, :, :, 2]
         Szs = @view S[:, :, :, 3]
 
+        c = -γ / (1 + α^2)
+        m = -1 / μ
+
         @simd for i in 1:n
             Sx = Sxs[i]
             Sy = Sys[i]
             Sz = Szs[i]
 
-            Hx = Hxs[i]
-            Hy = Hys[i]
-            Hz = Hzs[i]
+            Hx = Hxs[i] * m
+            Hy = Hys[i] * m
+            Hz = Hzs[i] * m
 
             cx = Sy * Hz - Sz * Hy
             cy = Sz * Hx - Sx * Hz
             cz = Sx * Hy - Sy * Hx
 
-            Hxs[i] = cx + a * (Sy * cz - Sz * cy)
-            Hys[i] = cy + a * (Sz * cx - Sx * cz)
-            Hzs[i] = cz + a * (Sx * cy - Sy * cx)
+            Hxs[i] = c * (cx + α * (Sy * cz - Sz * cy))
+            Hys[i] = c * (cy + α * (Sz * cx - Sx * cz))
+            Hzs[i] = c * (cz + α * (Sx * cy - Sy * cx))
         end
     end
 end
 
-function double_cross_spin_simd!(∇H, S, a, g)
+function double_cross_spin_simd!(∇H, S, α, γ, μ)
     @inbounds @fastmath begin
         nx, ny, nz, _ = size(S)
         n = nx * ny * nz
@@ -397,7 +322,8 @@ function double_cross_spin_simd!(∇H, S, a, g)
         lane = VecRange{N}(0)
         iv, ir = range_chunks(1:n, N)
 
-        c = -g / (1 + a^2)
+        c = -γ / (1 + α^2)
+        m = -1 / μ
 
         for i in iv
             il = lane + i
@@ -406,17 +332,17 @@ function double_cross_spin_simd!(∇H, S, a, g)
             Sy = Sys[il]
             Sz = Szs[il]
 
-            Hx = Hxs[il]
-            Hy = Hys[il]
-            Hz = Hzs[il]
+            Hx = Hxs[il] * m
+            Hy = Hys[il] * m
+            Hz = Hzs[il] * m
 
             cx = Sy * Hz - Sz * Hy
             cy = Sz * Hx - Sx * Hz
             cz = Sx * Hy - Sy * Hx
 
-            Hxs[il] = cx + a * (Sy * cz - Sz * cy)
-            Hys[il] = cy + a * (Sz * cx - Sx * cz)
-            Hzs[il] = cz + a * (Sx * cy - Sy * cx)
+            Hxs[il] = c * (cx + α * (Sy * cz - Sz * cy))
+            Hys[il] = c * (cy + α * (Sz * cx - Sx * cz))
+            Hzs[il] = c * (cz + α * (Sx * cy - Sy * cx))
         end
 
         for i in ir
@@ -424,17 +350,130 @@ function double_cross_spin_simd!(∇H, S, a, g)
             Sy = Sys[i]
             Sz = Szs[i]
 
-            Hx = Hxs[i]
-            Hy = Hys[i]
-            Hz = Hzs[i]
+            Hx = Hxs[i] * m
+            Hy = Hys[i] * m
+            Hz = Hzs[i] * m
 
             cx = Sy * Hz - Sz * Hy
             cy = Sz * Hx - Sx * Hz
             cz = Sx * Hy - Sy * Hx
 
-            Hxs[i] = c * (cx + a * (Sy * cz - Sz * cy))
-            Hys[i] = c * (cy + a * (Sz * cx - Sx * cz))
-            Hzs[i] = c * (cz + a * (Sx * cy - Sy * cx))
+            Hxs[i] = c * (cx + α * (Sy * cz - Sz * cy))
+            Hys[i] = c * (cy + α * (Sz * cx - Sx * cz))
+            Hzs[i] = c * (cz + α * (Sx * cy - Sy * cx))
         end
     end
+end
+
+function double_cross_spin!(∇H, S, α, γ, μ, k)
+    @inbounds @fastmath begin
+        nx, ny, nz, _ = size(S)
+        n = nx * ny * nz
+
+        Hxs = @view ∇H[:, :, :, 1]
+        Hys = @view ∇H[:, :, :, 2]
+        Hzs = @view ∇H[:, :, :, 3]
+
+        Sxs = @view S[:, :, :, 1]
+        Sys = @view S[:, :, :, 2]
+        Szs = @view S[:, :, :, 3]
+
+        c = -γ / (1 + α^2)
+        m = -1 / μ
+
+        @simd for i in 1:n
+            Sx = Sxs[i]
+            Sy = Sys[i]
+            Sz = Szs[i]
+
+            Hx = Hxs[i] * m + k * randn()
+            Hy = Hys[i] * m + k * randn()
+            Hz = Hzs[i] * m + k * randn()
+
+            cx = Sy * Hz - Sz * Hy
+            cy = Sz * Hx - Sx * Hz
+            cz = Sx * Hy - Sy * Hx
+
+            Hxs[i] = c * (cx + α * (Sy * cz - Sz * cy))
+            Hys[i] = c * (cy + α * (Sz * cx - Sx * cz))
+            Hzs[i] = c * (cz + α * (Sx * cy - Sy * cx))
+        end
+    end
+end
+
+function double_cross_spin_simd!(∇H, S, α, γ, μ, k)
+    @inbounds @fastmath begin
+        nx, ny, nz, _ = size(S)
+        n = nx * ny * nz
+
+        Hxs = @view ∇H[:, :, :, 1]
+        Hys = @view ∇H[:, :, :, 2]
+        Hzs = @view ∇H[:, :, :, 3]
+
+        Sxs = @view S[:, :, :, 1]
+        Sys = @view S[:, :, :, 2]
+        Szs = @view S[:, :, :, 3]
+
+        N = 8
+        lane = VecRange{N}(0)
+        iv, ir = range_chunks(1:n, N)
+
+        c = -γ / (1 + α^2)
+        m = -1 / μ
+
+        randn8() = Vec(
+            randn(), randn(), randn(), randn(),
+            randn(), randn(), randn(), randn()
+        )
+
+        for i in iv
+            il = lane + i
+
+            Sx = Sxs[il]
+            Sy = Sys[il]
+            Sz = Szs[il]
+
+            Hx = Hxs[il] * m + randn8() * k
+            Hy = Hys[il] * m + randn8() * k
+            Hz = Hzs[il] * m + randn8() * k
+
+            cx = Sy * Hz - Sz * Hy
+            cy = Sz * Hx - Sx * Hz
+            cz = Sx * Hy - Sy * Hx
+
+            Hxs[il] = c * (cx + α * (Sy * cz - Sz * cy))
+            Hys[il] = c * (cy + α * (Sz * cx - Sx * cz))
+            Hzs[il] = c * (cz + α * (Sx * cy - Sy * cx))
+        end
+
+        for i in ir
+            Sx = Sxs[i]
+            Sy = Sys[i]
+            Sz = Szs[i]
+
+            Hx = Hxs[i] * m + k * randn()
+            Hy = Hys[i] * m + k * randn()
+            Hz = Hzs[i] * m + k * randn()
+
+            cx = Sy * Hz - Sz * Hy
+            cy = Sz * Hx - Sx * Hz
+            cz = Sx * Hy - Sy * Hx
+
+            Hxs[i] = c * (cx + α * (Sy * cz - Sz * cy))
+            Hys[i] = c * (cy + α * (Sz * cx - Sx * cz))
+            Hzs[i] = c * (cz + α * (Sx * cy - Sy * cx))
+        end
+    end
+end
+
+function compute_∂S!(∂S, S, J, dz, B, α, γ, μ)
+    @inline compute_∇H!(∂S, S, J, dz, B)
+    @inline double_cross_spin_simd!(∂S, S, α, γ, μ)
+end
+
+function compute_∂S!(∂S, S, J, dz, B, α, γ, μ, kT, Δt)
+    k = √(2α * kT / (γ * μ * Δt))
+
+    @inline compute_∇H!(∂S, S, J, dz, B)
+    @inline double_cross_spin_simd!(∂S, S, α, γ, μ, k)
 end
