@@ -42,7 +42,7 @@ function do_heun_step!(state::SimState, params::SimParams)
 
     # 0.5 Δt (f(tn, yn) + f(tn+1, ypn+1))
     c = 0.5 * params.Δt
-    for i in eachindex(state.S)
+    @inbounds @simd for i in eachindex(state.S)
         state.∂S[i] = c * (state.∂S[i] + state.∂Sp[i])
     end
 
