@@ -173,3 +173,64 @@ function make_3d_spin_animation(n, t_end, nt)
 
     @time animate_spin_history(lattice_points, spin_history)
 end
+
+function make_3d_spin_interactive(n, t_end, nt)
+    lattice_points = zeros(n, n, n, 3)
+
+    for x in 1:n, y in 1:n, z in 1:n
+        lattice_points[x, y, z, 1] = Float64(x)
+        lattice_points[x, y, z, 2] = Float64(y)
+        lattice_points[x, y, z, 3] = Float64(z)
+    end
+
+    lattice_points = reshape(lattice_points, n^3, 3)
+
+    ts = range(0, t_end, nt)
+
+    ϕ = π / 8
+    θ(x, y, z, t) = x + y / 2 + z / 3 + t
+
+    spin_history = zeros(n, n, n, 3, nt)
+
+    for (i, t) in enumerate(ts), x in 1:n, y in 1:n, z in 1:n
+        spin_history[x, y, z, :, i] = get_spin(ϕ, θ(x, y, z, t))
+    end
+
+    spin_history = reshape(spin_history, n^3, 3, nt)
+
+    f = Figure(resolution=(1920, 1080))
+    ax = Axis3(f[1, 1], viewmode=:fitzoom, aspect=:data, perspectiveness=0.5)
+
+    spinx = Observable(@view spin_history[:, 1, 1])
+    spiny = Observable(@view spin_history[:, 2, 1])
+    spinz = Observable(@view spin_history[:, 3, 1])
+
+    arrows!(ax,
+        (@view lattice_points[:, 1]),
+        (@view lattice_points[:, 2]),
+        (@view lattice_points[:, 3]),
+        spinx, spiny, spinz;
+        lengthscale=1.0, linewidth=0.05, arrowsize=0.1, color=:gray
+    )
+
+    # sl = Slider(f[2, 1], range=axes(spin_history, 3))
+
+    # lift(sl.value) do i
+    #     spinx[] = @view spin_history[:, 1, i]
+    #     spiny[] = @view spin_history[:, 2, i]
+    #     spinz[] = @view spin_history[:, 3, i]
+    # end
+
+    bt = Button(f; label="play")
+
+    on(bt.clicks) do n
+        @async for i in axes(spin_history, 3)
+            spinx[] = @view spin_history[:, 1, i]
+            spiny[] = @view spin_history[:, 2, i]
+            spinz[] = @view spin_history[:, 3, i]
+            sleep(0.001)
+        end
+    end
+
+    f
+end
