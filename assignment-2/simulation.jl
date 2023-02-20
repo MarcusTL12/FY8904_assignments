@@ -154,5 +154,8 @@ function simulate!(state::SimState, params::SimParams,
         append!(S_hist, state.S)
     end
 
-    reshape(S_hist, 1, 3, n_frames + 1)
+    nx, ny, nz, _ = size(state.S)
+    n = nx * ny * nz
+
+    reshape(S_hist, n, 3, n_frames + 1)
 end

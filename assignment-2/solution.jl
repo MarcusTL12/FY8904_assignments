@@ -22,3 +22,64 @@ function test_single_spin()
 
     @time animate_spin_history(lattice_points, S_hist)
 end
+
+function test_5x5_grid()
+    S = zeros(5, 5, 1, 3)
+
+    # randn!(@view S[:, :, 1, 1:2])
+    # S .*= 0.2
+
+    # @. S[:, :, 1, 3] =
+    #     √(1.0 - (@view S[:, :, 1, 2])^2 - (@view S[:, :, 1, 3])^2)
+
+    S[:, :, 1, 1] .= 1.0
+
+    lattice_points = zeros(5, 5, 3)
+
+    for x in 1:5, y in 1:5
+        lattice_points[x, y, 1] = Float64(x)
+        lattice_points[x, y, 2] = Float64(y)
+    end
+
+    lattice_points = reshape(lattice_points, 25, 3)
+
+    state = init_state(S)
+    params = setup_params(
+        -10.0, 1.0, 1.0, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
+    )
+
+    S_hist = @time simulate!(state, params, 1000, 1)
+
+    @time animate_spin_history(lattice_points, S_hist)
+end
+
+function test_nxnxn_box(n)
+    S = zeros(n, n, n, 3)
+
+    # randn!(@view S[:, :, 1, 1:2])
+    # S .*= 0.2
+
+    # @. S[:, :, 1, 3] =
+    #     √(1.0 - (@view S[:, :, 1, 2])^2 - (@view S[:, :, 1, 3])^2)
+
+    S[:, :, :, 1] .= 1.0
+
+    lattice_points = zeros(n, n, n, 3)
+
+    for x in 1:n, y in 1:n, z in 1:n
+        lattice_points[x, y, z, 1] = Float64(x)
+        lattice_points[x, y, z, 2] = Float64(y)
+        lattice_points[x, y, z, 3] = Float64(z)
+    end
+
+    lattice_points = reshape(lattice_points, n^3, 3)
+
+    state = init_state(S)
+    params = setup_params(
+        -2.0, 1.0, 10.0, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
+    )
+
+    S_hist = @time simulate!(state, params, 1000, 5)
+
+    @time animate_spin_history(lattice_points, S_hist)
+end

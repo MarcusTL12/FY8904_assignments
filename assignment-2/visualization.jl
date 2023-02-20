@@ -1,7 +1,7 @@
 using GLMakie
 
 function animate_spin_history(lattice_points, spin_history)
-    f = Figure(resolution=(1920, 1080))
+    f = Figure(resolution=(3840, 2160))
     ax = Axis3(f[1, 1], viewmode=:fitzoom, aspect=:data, perspectiveness=0.5)
 
     spinx = Observable(@view spin_history[:, 1, 1])
