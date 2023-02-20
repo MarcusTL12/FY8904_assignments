@@ -24,9 +24,9 @@ end
 
 # This assumes that parameters are given in the following units:
 # J: meV
-# dz: multiple of J
-# kT: multiple of J
-# B: multiple of J
+# dz: meV
+# kT: meV
+# B: meV x 3
 # Δt: fs
 # α: unitless
 function setup_params(J, dz, kT, B, Δt, α)
@@ -34,7 +34,7 @@ function setup_params(J, dz, kT, B, Δt, α)
     # Here is δ in units [1 / (fs meV)]
     δ = 0.0027586206896551726
 
-    SimParams(J, dz * J, B * J, α, δ, kT * J, Δt)
+    SimParams(J, dz, B, α, δ, kT, Δt)
 end
 
 function init_state(S)
