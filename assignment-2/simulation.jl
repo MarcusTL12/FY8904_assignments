@@ -6,8 +6,10 @@ mutable struct SimState
     Sp::Array{Float64,4}
     ∂S::Array{Float64,4}
     ∂Sp::Array{Float64,4}
-    Γ1::Array{Float64,4}
-    Γ2::Array{Float64,4}
+    Γ::Array{Float64,4}
+
+    Γ_send::Channel{Array{Float64,4}}
+    Γ_recv::Channel{Array{Float64,4}}
 end
 
 struct SimParams
@@ -22,7 +24,29 @@ struct SimParams
 end
 
 function init_state(S)
-    SimState(S, similar(S), similar(S), similar(S), randn(size(S)), similar(S))
+    Γ_recv = Channel{Array{Float64,4}}(1)
+
+    Γ_send = Channel{Array{Float64,4}}(1; spawn=true) do ch
+        while true
+            Γ = take!(ch)
+            randn!(Γ)
+            put!(Γ_recv, Γ)
+        end
+    end
+
+    Γ2 = similar(S)
+    put!(Γ_send, Γ2)
+
+    state = SimState(
+        S, similar(S), similar(S), similar(S), randn(size(S)), Γ_send, Γ_recv
+    )
+
+    finalizer(state) do state
+        close(state.Γ_send)
+        close(state.Γ_recv)
+    end
+
+    state
 end
 
 function normalize_spin!(S)
@@ -79,18 +103,17 @@ function do_normalized_euler_step!(S2, S1, ∂S, c)
 end
 
 function do_heun_step!(state::SimState, params::SimParams)
-    Γ_task = Threads.@spawn randn!(state.Γ2)
-
     # f(tn, yn)
-    compute_∂S!(state.∂S, state.S, state.Γ1, params)
+    compute_∂S!(state.∂S, state.S, state.Γ, params)
+    put!(state.Γ_send, state.Γ) # Send off Γ to be randomized
 
     # ypn+1
     @inline do_normalized_euler_step!(state.Sp, state.S, state.∂S, params.Δt)
 
-    wait(Γ_task)
+    state.Γ = take!(state.Γ_recv) # Take randomized Γ
 
     # f(tn+1, ypn+1)
-    compute_∂S!(state.∂Sp, state.Sp, state.Γ2, params)
+    compute_∂S!(state.∂Sp, state.Sp, state.Γ, params)
 
     # 0.5 Δt (f(tn, yn) + f(tn+1, ypn+1))
     c = 0.5 * params.Δt
@@ -100,6 +123,4 @@ function do_heun_step!(state::SimState, params::SimParams)
 
     # yn+1
     @inline do_normalized_euler_step!(state.S, state.S, state.∂S, 1.0)
-
-    state.Γ1, state.Γ2 = state.Γ2, state.Γ1
 end
