@@ -17,21 +17,24 @@ struct SimParams
     dz::Float64
     B::SVector{3,Float64}
     α::Float64
-    γ::Float64
-    μ::Float64
+    δ::Float64
     kT::Float64
     Δt::Float64
 end
 
 # This assumes that parameters are given in the following units:
-# J: eV
-# dz: eV
-# kT: eV
-# B: [eV; 3]
+# J: meV
+# dz: multiple of J
+# kT: multiple of J
+# B: multiple of J
 # Δt: fs
 # α: unitless
 function setup_params(J, dz, kT, B, Δt, α)
-    SimParams(J, dz, B, α, 1.6e-4, 5.8e-5, kT, Δt)
+    # defining δ = γ/μ
+    # Here is δ in units [1 / (fs meV)]
+    δ = 0.0027586206896551726
+
+    SimParams(J, dz * J, B * J, α, δ, kT * J, Δt)
 end
 
 function init_state(S)
@@ -82,7 +85,7 @@ end
 
 function compute_∂S!(∂S, S, Γ, params::SimParams)
     @inline compute_∂S!(∂S, S, params.J, params.dz, params.B, params.α,
-        params.γ, params.μ, params.kT, params.Δt, Γ)
+        params.δ, params.kT, params.Δt, Γ)
 end
 
 function do_normalized_euler_step!(S2, S1, ∂S, c)

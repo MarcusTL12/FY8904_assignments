@@ -219,43 +219,7 @@ function compute_∇H!(∇H, S, J, dz, B)
     end
 end
 
-function double_cross_spin!(∇H, S, α, γ, μ)
-    @inbounds @fastmath begin
-        nx, ny, nz, _ = size(S)
-        n = nx * ny * nz
-
-        Hxs = @view ∇H[:, :, :, 1]
-        Hys = @view ∇H[:, :, :, 2]
-        Hzs = @view ∇H[:, :, :, 3]
-
-        Sxs = @view S[:, :, :, 1]
-        Sys = @view S[:, :, :, 2]
-        Szs = @view S[:, :, :, 3]
-
-        c = -γ / (1 + α^2)
-        m = -1 / μ
-
-        @turbo for i in 1:n
-            Sx = Sxs[i]
-            Sy = Sys[i]
-            Sz = Szs[i]
-
-            Hx = Hxs[i] * m
-            Hy = Hys[i] * m
-            Hz = Hzs[i] * m
-
-            cx = Sy * Hz - Sz * Hy
-            cy = Sz * Hx - Sx * Hz
-            cz = Sx * Hy - Sy * Hx
-
-            Hxs[i] = c * (cx + α * (Sy * cz - Sz * cy))
-            Hys[i] = c * (cy + α * (Sz * cx - Sx * cz))
-            Hzs[i] = c * (cz + α * (Sx * cy - Sy * cx))
-        end
-    end
-end
-
-function double_cross_spin!(∇H, S, α, γ, μ, k, Γ)
+function double_cross_spin!(∇H, S, α, δ, k, Γ)
     @inbounds @fastmath begin
         nx, ny, nz, _ = size(S)
         n = nx * ny * nz
@@ -272,17 +236,16 @@ function double_cross_spin!(∇H, S, α, γ, μ, k, Γ)
         Γys = @view Γ[:, :, :, 2]
         Γzs = @view Γ[:, :, :, 3]
 
-        c = -γ / (1 + α^2)
-        m = -1 / μ
+        c = 1 / (1 + α^2)
 
         @turbo for i in 1:n
             Sx = Sxs[i]
             Sy = Sys[i]
             Sz = Szs[i]
 
-            Hx = Hxs[i] * m + k * Γxs[i]
-            Hy = Hys[i] * m + k * Γys[i]
-            Hz = Hzs[i] * m + k * Γzs[i]
+            Hx = δ * (Hxs[i] + k * Γxs[i])
+            Hy = δ * (Hys[i] + k * Γys[i])
+            Hz = δ * (Hzs[i] + k * Γzs[i])
 
             cx = Sy * Hz - Sz * Hy
             cy = Sz * Hx - Sx * Hz
@@ -295,14 +258,9 @@ function double_cross_spin!(∇H, S, α, γ, μ, k, Γ)
     end
 end
 
-function compute_∂S!(∂S, S, J, dz, B, α, γ, μ)
-    @inline compute_∇H!(∂S, S, J, dz, B)
-    @inline double_cross_spin!(∂S, S, α, γ, μ)
-end
-
-function compute_∂S!(∂S, S, J, dz, B, α, γ, μ, kT, Δt, Γ)
-    k = √(2α * kT / (γ * μ * Δt))
+function compute_∂S!(∂S, S, J, dz, B, α, δ, kT, Δt, Γ)
+    k = √(2α * δ * kT / Δt)
 
     @inline compute_∇H!(∂S, S, J, dz, B)
-    @inline double_cross_spin!(∂S, S, α, γ, μ, k, Γ)
+    @inline double_cross_spin!(∂S, S, α, δ, k, Γ)
 end
