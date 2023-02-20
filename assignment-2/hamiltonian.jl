@@ -1,6 +1,7 @@
 using LinearAlgebra
 using ForwardDiff
 using SIMD
+using LoopVectorization
 
 function compute_hamiltonian_anisotropy(S, dz)
     H = 0.0

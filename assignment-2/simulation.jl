@@ -138,3 +138,21 @@ function do_heun_step!(state::SimState, params::SimParams)
     # yn+1
     @inline do_normalized_euler_step!(state.S, state.S, state.∂S, 1.0)
 end
+
+function simulate!(state::SimState, params::SimParams,
+    n_frames, n_steps_per_frame)
+
+    S_hist = Float64[]
+
+    append!(S_hist, state.S)
+
+    for _ in 1:n_frames
+        for _ in 1:n_steps_per_frame
+            do_heun_step!(state, params)
+        end
+
+        append!(S_hist, state.S)
+    end
+
+    reshape(S_hist, 1, 3, n_frames + 1)
+end
