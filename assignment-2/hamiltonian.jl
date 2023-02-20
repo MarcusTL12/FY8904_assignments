@@ -297,7 +297,7 @@ end
 
 function compute_∂S!(∂S, S, J, dz, B, α, γ, μ)
     @inline compute_∇H!(∂S, S, J, dz, B)
-    @inline double_cross_spin_simd!(∂S, S, α, γ, μ)
+    @inline double_cross_spin!(∂S, S, α, γ, μ)
 end
 
 function compute_∂S!(∂S, S, J, dz, B, α, γ, μ, kT, Δt, Γ)
