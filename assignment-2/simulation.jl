@@ -25,6 +25,44 @@ function init_state(S)
     SimState(S, similar(S), similar(S), similar(S), randn(size(S)), similar(S))
 end
 
+function normalize_spin!(S)
+    @inbounds @fastmath begin
+        Sxs = @view S[:, :, :, 1]
+        Sys = @view S[:, :, :, 2]
+        Szs = @view S[:, :, :, 3]
+
+        N = 8
+        iv, ir = range_chunks(eachindex(Sxs), N)
+        lane = VecRange{N}(0)
+
+        for i in iv
+            il = lane + i
+
+            Sx = Sxs[il]
+            Sy = Sys[il]
+            Sz = Szs[il]
+
+            l_inv = 1 / √(Sx^2 + (Sy^2 + Sz^2)) # Parenthesis to encourage fma
+
+            Sxs[il] = Sx * l_inv
+            Sys[il] = Sy * l_inv
+            Szs[il] = Sz * l_inv
+        end
+
+        for i in ir
+            Sx = Sxs[i]
+            Sy = Sys[i]
+            Sz = Szs[i]
+
+            l_inv = 1 / √(Sx^2 + Sy^2 + Sz^2)
+
+            Sxs[i] = Sx * l_inv
+            Sys[i] = Sy * l_inv
+            Szs[i] = Sz * l_inv
+        end
+    end
+end
+
 function compute_∂S!(∂S, S, Γ, params::SimParams)
     compute_∂S!(∂S, S, params.J, params.dz, params.B, params.α, params.γ,
         params.μ, params.kT, params.Δt, Γ)
