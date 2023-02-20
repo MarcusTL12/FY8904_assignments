@@ -81,5 +81,5 @@ function test_nxnxn_box(n)
 
     S_hist = @time simulate!(state, params, 1000, 5)
 
-    @time animate_spin_history(lattice_points, S_hist)
+    @time visualize_spin_history_interactive(lattice_points, S_hist)
 end
