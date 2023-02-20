@@ -198,12 +198,14 @@ function make_3d_spin_interactive(n, t_end, nt)
 
     spin_history = reshape(spin_history, n^3, 3, nt)
 
-    f = Figure(resolution=(1920, 1080))
-    ax = Axis3(f[1, 1], viewmode=:fitzoom, aspect=:data, perspectiveness=0.5)
+    f = Figure(resolution=(1920, 1450))
+    ax = Axis3(f[1, 1], viewmode=:fit, aspect=:data, perspectiveness=0.5)
 
-    spinx = Observable(@view spin_history[:, 1, 1])
-    spiny = Observable(@view spin_history[:, 2, 1])
-    spinz = Observable(@view spin_history[:, 3, 1])
+    frame_n = Observable(1)
+
+    spinx = @lift (@view spin_history[:, 1, $frame_n])
+    spiny = @lift (@view spin_history[:, 2, $frame_n])
+    spinz = @lift (@view spin_history[:, 3, $frame_n])
 
     arrows!(ax,
         (@view lattice_points[:, 1]),
@@ -213,23 +215,46 @@ function make_3d_spin_interactive(n, t_end, nt)
         lengthscale=1.0, linewidth=0.05, arrowsize=0.1, color=:gray
     )
 
-    # sl = Slider(f[2, 1], range=axes(spin_history, 3))
+    isrunning = Observable(false)
 
-    # lift(sl.value) do i
-    #     spinx[] = @view spin_history[:, 1, i]
-    #     spiny[] = @view spin_history[:, 2, i]
-    #     spinz[] = @view spin_history[:, 3, i]
-    # end
+    sl = Slider(f[2, 1], range=axes(spin_history, 3))
 
-    bt = Button(f; label="play")
-
-    on(bt.clicks) do n
-        @async for i in axes(spin_history, 3)
-            spinx[] = @view spin_history[:, 1, i]
-            spiny[] = @view spin_history[:, 2, i]
-            spinz[] = @view spin_history[:, 3, i]
-            sleep(0.001)
+    lift(sl.value) do i
+        if !isrunning[]
+            frame_n[] = i
         end
+    end
+
+    play_label = @lift $isrunning ? "▋▋" : "▶"
+    play = Button(f[3, 2]; label=play_label)
+
+    on(play.clicks) do _
+        if !isrunning[]
+            isrunning[] = true
+            @async begin
+                if frame_n[] == size(spin_history, 3)
+                    frame_n[] = 1
+                end
+
+                while frame_n[] < size(spin_history, 3)
+                    if !isrunning[]
+                        break
+                    end
+                    frame_n[] += 1
+                    sleep(1 / 60)
+                end
+                isrunning[] = false
+            end
+        else
+            isrunning[] = false
+        end
+    end
+
+    reset = Button(f[4, 2]; label="█▋")
+
+    on(reset.clicks) do _
+        isrunning[] = false
+        frame_n[] = 1
     end
 
     f
