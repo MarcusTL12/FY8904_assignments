@@ -31,25 +31,7 @@ function normalize_spin!(S)
         Sys = @view S[:, :, :, 2]
         Szs = @view S[:, :, :, 3]
 
-        N = 8
-        iv, ir = range_chunks(eachindex(Sxs), N)
-        lane = VecRange{N}(0)
-
-        for i in iv
-            il = lane + i
-
-            Sx = Sxs[il]
-            Sy = Sys[il]
-            Sz = Szs[il]
-
-            l_inv = 1 / √(Sx^2 + (Sy^2 + Sz^2)) # Parenthesis to encourage fma
-
-            Sxs[il] = Sx * l_inv
-            Sys[il] = Sy * l_inv
-            Szs[il] = Sz * l_inv
-        end
-
-        for i in ir
+        @turbo for i in eachindex(Sxs)
             Sx = Sxs[i]
             Sy = Sys[i]
             Sz = Szs[i]
@@ -64,8 +46,36 @@ function normalize_spin!(S)
 end
 
 function compute_∂S!(∂S, S, Γ, params::SimParams)
-    compute_∂S!(∂S, S, params.J, params.dz, params.B, params.α, params.γ,
-        params.μ, params.kT, params.Δt, Γ)
+    @inline compute_∂S!(∂S, S, params.J, params.dz, params.B, params.α,
+        params.γ, params.μ, params.kT, params.Δt, Γ)
+end
+
+function do_normalized_euler_step!(S2, S1, ∂S, c)
+    @inbounds @fastmath begin
+        S2xs = @view S2[:, :, :, 1]
+        S2ys = @view S2[:, :, :, 2]
+        S2zs = @view S2[:, :, :, 3]
+
+        S1xs = @view S1[:, :, :, 1]
+        S1ys = @view S1[:, :, :, 2]
+        S1zs = @view S1[:, :, :, 3]
+
+        ∂Sxs = @view ∂S[:, :, :, 1]
+        ∂Sys = @view ∂S[:, :, :, 2]
+        ∂Szs = @view ∂S[:, :, :, 3]
+
+        @turbo for i in eachindex(S1xs)
+            Sx = S1xs[i] + c * ∂Sxs[i]
+            Sy = S1ys[i] + c * ∂Sys[i]
+            Sz = S1zs[i] + c * ∂Szs[i]
+
+            l_inv = 1 / √(Sx^2 + Sy^2 + Sz^2)
+
+            S2xs[i] = Sx * l_inv
+            S2ys[i] = Sy * l_inv
+            S2zs[i] = Sz * l_inv
+        end
+    end
 end
 
 function do_heun_step!(state::SimState, params::SimParams)
@@ -75,9 +85,7 @@ function do_heun_step!(state::SimState, params::SimParams)
     compute_∂S!(state.∂S, state.S, state.Γ1, params)
 
     # ypn+1
-    @inbounds @simd for i in eachindex(state.S)
-        state.Sp[i] = state.S[i] + state.∂S[i] * params.Δt
-    end
+    @inline do_normalized_euler_step!(state.Sp, state.S, state.∂S, params.Δt)
 
     wait(Γ_task)
 
@@ -86,14 +94,12 @@ function do_heun_step!(state::SimState, params::SimParams)
 
     # 0.5 Δt (f(tn, yn) + f(tn+1, ypn+1))
     c = 0.5 * params.Δt
-    @inbounds @simd for i in eachindex(state.S)
+    @turbo for i in eachindex(state.S)
         state.∂S[i] = c * (state.∂S[i] + state.∂Sp[i])
     end
 
     # yn+1
-    @inbounds @simd for i in eachindex(state.S)
-        state.S[i] = state.S[i] + state.∂S[i]
-    end
+    @inline do_normalized_euler_step!(state.S, state.S, state.∂S, 1.0)
 
     state.Γ1, state.Γ2 = state.Γ2, state.Γ1
 end
