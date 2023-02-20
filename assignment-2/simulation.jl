@@ -23,6 +23,17 @@ struct SimParams
     Δt::Float64
 end
 
+# This assumes that parameters are given in the following units:
+# J: eV
+# dz: eV
+# kT: eV
+# B: [eV; 3]
+# Δt: fs
+# α: unitless
+function setup_params(J, dz, kT, B, Δt, α)
+    SimParams(J, dz, B, α, 1.6e-4, 5.8e-5, kT, Δt)
+end
+
 function init_state(S)
     Γ_recv = Channel{Array{Float64,4}}(1)
 
