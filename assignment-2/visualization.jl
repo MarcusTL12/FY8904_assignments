@@ -43,14 +43,14 @@ function visualize_spin_history_interactive(lattice_points, spin_history)
 
     isrunning = Observable(false)
 
-    sl = Slider(f[2, 1], range=axes(spin_history, 3))
+    sl = Slider(f[2, 1][1, 1], range=axes(spin_history, 3))
 
     lift(sl.value) do i
         @async frame_n[] = i
     end
 
-    play_label = @lift $isrunning ? "▋▋" : "▶"
-    play = Button(f[3, 2]; label=play_label)
+    play_label = @lift $isrunning ? "▮▮" : " ▸ "
+    play = Button(f[2, 1][1, 2]; label=play_label)
 
     on(play.clicks) do _
         if !isrunning[]
@@ -75,7 +75,7 @@ function visualize_spin_history_interactive(lattice_points, spin_history)
         end
     end
 
-    reset = Button(f[4, 2]; label="█▋")
+    reset = Button(f[2, 1][1, 3]; label="⬛")
 
     on(reset.clicks) do _
         isrunning[] = false
