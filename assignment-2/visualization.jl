@@ -24,7 +24,7 @@ function animate_spin_history(lattice_points, spin_history)
 end
 
 function visualize_spin_history_interactive(lattice_points, spin_history)
-    f = Figure(resolution=(1100,1000))
+    f = Figure(resolution=(1100, 1000))
     ax = Axis3(f[1, 1], viewmode=:fitzoom, aspect=:data, perspectiveness=0.5)
 
     frame_n = Observable(1)
@@ -46,9 +46,7 @@ function visualize_spin_history_interactive(lattice_points, spin_history)
     sl = Slider(f[2, 1], range=axes(spin_history, 3))
 
     lift(sl.value) do i
-        if !isrunning[]
-            frame_n[] = i
-        end
+        @async frame_n[] = i
     end
 
     play_label = @lift $isrunning ? "▋▋" : "▶"
@@ -67,6 +65,7 @@ function visualize_spin_history_interactive(lattice_points, spin_history)
                         break
                     end
                     frame_n[] += 1
+                    set_close_to!(sl, frame_n[])
                     sleep(1 / 60)
                 end
                 isrunning[] = false

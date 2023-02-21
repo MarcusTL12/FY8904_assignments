@@ -113,6 +113,40 @@ function test_3d_box(nx, ny, nz)
         10.0, 0.0, 1.0, (@SVector [0.0, 0.0, 0.0]), 0.1, 0.1
     )
 
+    S_hist = @time simulate!(state, params, 1000, 10)
+
+    @time visualize_spin_history_interactive(lattice_points, S_hist)
+end
+
+function test_3d_box_2staged(nx, ny, nz)
+    n = nx * ny * nz
+    # S = zeros(nx, ny, nz, 3)
+    S = randn(nx, ny, nz, 3)
+    normalize_spin!(S)
+
+    # randn!(@view S[:, :, 1, 1:2])
+    # S .*= 0.2
+
+    # @. S[:, :, 1, 3] =
+    #     √(1.0 - (@view S[:, :, 1, 2])^2 - (@view S[:, :, 1, 3])^2)
+
+    # S[:, :, :, 3] .= 1.0
+
+    lattice_points = zeros(nx, ny, nz, 3)
+
+    for x in 1:nx, y in 1:ny, z in 1:nz
+        lattice_points[x, y, z, 1] = Float64(x)
+        lattice_points[x, y, z, 2] = Float64(y)
+        lattice_points[x, y, z, 3] = Float64(z)
+    end
+
+    lattice_points = reshape(lattice_points, n, 3)
+
+    state = init_state(S)
+    params = setup_params(
+        10.0, 0.0, 1.0, (@SVector [0.0, 0.0, 0.0]), 0.1, 0.1
+    )
+
     S_hist = @time simulate!(state, params, 500, 10)
 
     params = setup_params(
