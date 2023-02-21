@@ -78,8 +78,11 @@ function visualize_spin_history_interactive(lattice_points, spin_history)
     reset = Button(f[2, 1][1, 3]; label="⬛")
 
     on(reset.clicks) do _
-        isrunning[] = false
-        frame_n[] = 1
+        @async begin
+            isrunning[] = false
+            frame_n[] = 1
+            set_close_to!(sl, frame_n[])
+        end
     end
 
     f
