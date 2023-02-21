@@ -1,4 +1,5 @@
 using GLMakie
+GLMakie.activate!(title="Assignment-2", framerate=60.0)
 
 function animate_spin_history(lattice_points, spin_history)
     f = Figure(resolution=(3840, 2160))
@@ -24,8 +25,11 @@ function animate_spin_history(lattice_points, spin_history)
 end
 
 function visualize_spin_history_interactive(lattice_points, spin_history)
-    f = Figure(resolution=(1100, 1000))
+    f = Figure(resolution=(1100, 1000), fullscreen=true)
     ax = Axis3(f[1, 1], viewmode=:fitzoom, aspect=:data, perspectiveness=0.5)
+
+    framerate = 60.0
+    frametime = 1.0 / framerate
 
     frame_n = Observable(1)
 
@@ -38,7 +42,8 @@ function visualize_spin_history_interactive(lattice_points, spin_history)
         (@view lattice_points[:, 2]),
         (@view lattice_points[:, 3]),
         spinx, spiny, spinz;
-        lengthscale=0.4, linewidth=0.04, arrowsize=0.1, color=:gray
+        lengthscale=0.4, linewidth=0.04, arrowsize=0.1, color=:gray,
+        arrowcolor=:red
     )
 
     isrunning = Observable(false)
@@ -46,7 +51,7 @@ function visualize_spin_history_interactive(lattice_points, spin_history)
     sl = Slider(f[2, 1][1, 1], range=axes(spin_history, 3))
 
     lift(sl.value) do i
-        @async frame_n[] = i
+        frame_n[] = i
     end
 
     play_label = @lift $isrunning ? "▮▮" : " ▸ "
@@ -56,6 +61,7 @@ function visualize_spin_history_interactive(lattice_points, spin_history)
         if !isrunning[]
             isrunning[] = true
             @async begin
+                t = time()
                 if frame_n[] == size(spin_history, 3)
                     frame_n[] = 1
                 end
@@ -64,10 +70,16 @@ function visualize_spin_history_interactive(lattice_points, spin_history)
                     if !isrunning[]
                         break
                     end
+
+                    target_time = t + frametime
+                    curtime = time()
+                    sleep(max(target_time - curtime, 0.0))
+                    t = target_time
+
                     frame_n[] += 1
                     set_close_to!(sl, frame_n[])
-                    sleep(1 / 60)
                 end
+
                 isrunning[] = false
             end
         else
