@@ -260,7 +260,7 @@ function double_cross_spin!(∇H, S, α, δ, k, Γ)
 end
 
 function compute_∂S!(∂S, S, J, dz, B, α, δ, kT, Δt, Γ)
-    k = √(2α * δ * kT / Δt)
+    k = √(2α * kT / (δ * Δt))
 
     @inline compute_∇H!(∂S, S, J, dz, B)
     @inline double_cross_spin!(∂S, S, α, δ, k, Γ)

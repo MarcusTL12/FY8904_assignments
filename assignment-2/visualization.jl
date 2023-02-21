@@ -24,7 +24,7 @@ function animate_spin_history(lattice_points, spin_history)
 end
 
 function visualize_spin_history_interactive(lattice_points, spin_history)
-    f = Figure(resolution=(3840,2160), fullscreen=true)
+    f = Figure(resolution=(1100,1000))
     ax = Axis3(f[1, 1], viewmode=:fitzoom, aspect=:data, perspectiveness=0.5)
 
     frame_n = Observable(1)
@@ -38,7 +38,7 @@ function visualize_spin_history_interactive(lattice_points, spin_history)
         (@view lattice_points[:, 2]),
         (@view lattice_points[:, 3]),
         spinx, spiny, spinz;
-        lengthscale=1.0, linewidth=0.05, arrowsize=0.1, color=:gray
+        lengthscale=0.4, linewidth=0.04, arrowsize=0.1, color=:gray
     )
 
     isrunning = Observable(false)

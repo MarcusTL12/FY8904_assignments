@@ -140,11 +140,13 @@ function do_heun_step!(state::SimState, params::SimParams)
 end
 
 function simulate!(state::SimState, params::SimParams,
-    n_frames, n_steps_per_frame)
+    n_frames, n_steps_per_frame, S_hist=Float64[], add_first=true)
 
-    S_hist = Float64[]
+    S_hist = reshape(S_hist, length(S_hist))
 
-    append!(S_hist, state.S)
+    if add_first
+        append!(S_hist, state.S)
+    end
 
     for _ in 1:n_frames
         for _ in 1:n_steps_per_frame
@@ -157,5 +159,5 @@ function simulate!(state::SimState, params::SimParams,
     nx, ny, nz, _ = size(state.S)
     n = nx * ny * nz
 
-    reshape(S_hist, n, 3, n_frames + 1)
+    reshape(S_hist, n, 3, length(S_hist) ÷ 3n)
 end
