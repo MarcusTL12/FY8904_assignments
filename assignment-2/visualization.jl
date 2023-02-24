@@ -25,7 +25,7 @@ function animate_spin_history(lattice_points, spin_history)
 end
 
 function visualize_spin_history_interactive(lattice_points, spin_history)
-    f = Figure(resolution=(1100, 1000), fullscreen=true)
+    f = Figure(resolution=(1000, 1100))
     ax = Axis3(f[1, 1], viewmode=:fitzoom, aspect=:data, perspectiveness=0.5)
 
     framerate = 60.0

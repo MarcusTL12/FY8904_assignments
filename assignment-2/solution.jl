@@ -86,9 +86,8 @@ end
 
 function test_3d_box(nx, ny, nz)
     n = nx * ny * nz
-    # S = zeros(nx, ny, nz, 3)
-    S = randn(nx, ny, nz, 3)
-    normalize_spin!(S)
+    S = zeros(nx, ny, nz, 3)
+    # S = randn(nx, ny, nz, 3)
 
     # randn!(@view S[:, :, 1, 1:2])
     # S .*= 0.2
@@ -96,7 +95,11 @@ function test_3d_box(nx, ny, nz)
     # @. S[:, :, 1, 3] =
     #     √(1.0 - (@view S[:, :, 1, 2])^2 - (@view S[:, :, 1, 3])^2)
 
-    # S[:, :, :, 3] .= 1.0
+    S[:, :, :, 3] .= 1.0
+    # S[1, 1, 1, 1] = 1.0
+    # S[1, 1, 1, 3] = 0.0
+
+    normalize_spin!(S)
 
     lattice_points = zeros(nx, ny, nz, 3)
 
@@ -110,15 +113,15 @@ function test_3d_box(nx, ny, nz)
 
     state = init_state(S)
     params = setup_params(
-        10.0, 0.0, 1.0, (@SVector [0.0, 0.0, 0.0]), 0.1, 0.1
+        -10.0, 3.0, 0.1, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
     )
 
-    S_hist = @time simulate!(state, params, 1000, 10)
+    S_hist = @time simulate!(state, params, 10000, 1)
 
     @time visualize_spin_history_interactive(lattice_points, S_hist)
 end
 
-function test_3d_box_2staged(nx, ny, nz)
+function test_3d_box_nstaged(nx, ny, nz)
     n = nx * ny * nz
     # S = zeros(nx, ny, nz, 3)
     S = randn(nx, ny, nz, 3)
@@ -144,13 +147,55 @@ function test_3d_box_2staged(nx, ny, nz)
 
     state = init_state(S)
     params = setup_params(
-        10.0, 0.0, 1.0, (@SVector [0.0, 0.0, 0.0]), 0.1, 0.1
+        -10.0, 0.0, 0.1, (@SVector [0.0, 0.0, 0.0]), 0.1, 0.1
     )
 
-    S_hist = @time simulate!(state, params, 500, 10)
+    S_hist = @time simulate!(state, params, 1000, 10)
 
     params = setup_params(
-        10.0, 0.0, 1.0, (@SVector [0.0, 0.0, 100.0]), 0.1, 0.1
+        -10.0, 0.0, 0.1, (@SVector [0.0, 0.0, 5.0]), 0.1, 0.1
+    )
+
+    S_hist = @time simulate!(state, params, 500, 10, S_hist, false)
+
+    params = setup_params(
+        -10.0, 0.0, 0.1, (@SVector [0.0, 0.0, 10.0]), 0.1, 0.1
+    )
+
+    S_hist = @time simulate!(state, params, 500, 10, S_hist, false)
+
+    params = setup_params(
+        -10.0, 0.0, 0.1, (@SVector [0.0, 0.0, 20.0]), 0.1, 0.1
+    )
+
+    S_hist = @time simulate!(state, params, 500, 10, S_hist, false)
+
+    params = setup_params(
+        -10.0, 0.0, 0.1, (@SVector [0.0, 0.0, 30.0]), 0.1, 0.1
+    )
+
+    S_hist = @time simulate!(state, params, 500, 10, S_hist, false)
+
+    params = setup_params(
+        -10.0, 0.0, 0.1, (@SVector [0.0, 0.0, 40.0]), 0.1, 0.1
+    )
+
+    S_hist = @time simulate!(state, params, 500, 10, S_hist, false)
+
+    params = setup_params(
+        -10.0, 0.0, 0.1, (@SVector [0.0, 0.0, 50.0]), 0.1, 0.1
+    )
+
+    S_hist = @time simulate!(state, params, 500, 10, S_hist, false)
+
+    params = setup_params(
+        -10.0, 0.0, 0.1, (@SVector [0.0, 0.0, 60.0]), 0.1, 0.1
+    )
+
+    S_hist = @time simulate!(state, params, 500, 10, S_hist, false)
+
+    params = setup_params(
+        -10.0, 0.0, 0.1, (@SVector [0.0, 0.0, 70.0]), 0.1, 0.1
     )
 
     S_hist = @time simulate!(state, params, 500, 10, S_hist, false)
