@@ -1,6 +1,7 @@
 include("hamiltonian.jl")
 include("simulation.jl")
 include("visualization.jl")
+using FFTW
 
 function test_single_spin()
     Sx0 = randn() * 0.2
@@ -31,8 +32,8 @@ function test_1d_chain(n)
     # S .*= 0.2
 
     S[:, :, :, 3] .= 1.0
-    S[n÷2, 1, 1, 2] = 1.0
-    S[n÷2, 1, 1, 3] = 0.0
+    # S[n÷2, 1, 1, 2] = 1.0
+    # S[n÷2, 1, 1, 3] = 0.0
 
     normalize_spin!(S)
 
@@ -46,7 +47,7 @@ function test_1d_chain(n)
 
     state = init_state(S)
     params = setup_params(
-        10.0, 3.0, 0.0, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
+        10.0, 3.0, 1.0, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
     )
 
     S_hist = @time simulate!(state, params, 1000, 1)
@@ -198,4 +199,91 @@ function test_3d_box_nstaged(nx, ny, nz)
     S_hist = @time simulate!(state, params, 1000, 10, S_hist, false)
 
     @time visualize_spin_history_interactive(lattice_points, S_hist)
+end
+
+function test_1d_dispersion(n)
+    S = zeros(n, 1, 1, 3)
+
+    S[:, :, :, 3] .= 1.0
+
+    # normalize_spin!(S)
+
+    # lattice_points = zeros(n, 3)
+
+    # for x in 1:n
+    #     lattice_points[x, 1] = Float64(x)
+    #     lattice_points[x, 2] = 0.0
+    #     lattice_points[x, 3] = 0.0
+    # end
+
+    state = init_state(S)
+    J = 10.0
+    dz = 3.0
+    params = setup_params(
+        J, dz, 0.01, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
+    )
+
+    n_steps = 30_000
+    S_hist = @time simulate!(state, params, n_steps, 1)
+
+    Sx = @view S_hist[:, 1, :]
+
+    # h/2 = 2067.811956368851 meV * fs
+    f_analytic(k) = (2dz + 2J * (1 - cos(2π * k))) / 2067.811956368851
+
+    Sx_fft = @time fftshift(fft(Sx))
+    k_fft = fftshift(fftfreq(n))
+    f_fft = fftshift(fftfreq(n_steps + 1), 1)
+
+    f, ax, _ = heatmap(k_fft, f_fft, norm.(Sx_fft))
+    plot!(ax, k_fft, f_analytic)
+
+    ax.xlabel[] = "k"
+    ax.ylabel[] = "f"
+
+    f
+end
+
+function test_1d_dispersion_antiferromagnet(n)
+    S = zeros(n, 1, 1, 3)
+
+    S[1:2:end, :, :, 3] .= 1.0
+    S[2:2:end, :, :, 3] .= -1.0
+
+    # normalize_spin!(S)
+
+    # lattice_points = zeros(n, 3)
+
+    # for x in 1:n
+    #     lattice_points[x, 1] = Float64(x)
+    #     lattice_points[x, 2] = 0.0
+    #     lattice_points[x, 3] = 0.0
+    # end
+
+    state = init_state(S)
+    J = -30.0
+    dz = 6.0
+    params = setup_params(
+        J, dz, 0.01, (@SVector [0.0, 0.0, 0.05J]), 1.0, 0.1
+    )
+
+    n_steps = 30_000
+    S_hist = @time simulate!(state, params, n_steps, 1)
+
+    Sx = @view S_hist[:, 1, :]
+
+    # h/2 = 2067.811956368851 meV * fs
+    f_analytic(k) = (2dz + 2J * (1 - cos(2π * k))) / 2067.811956368851
+
+    Sx_fft = @time fftshift(fft(Sx))
+    k_fft = fftshift(fftfreq(n))
+    f_fft = fftshift(fftfreq(n_steps + 1), 1)
+
+    f, ax, _ = heatmap(k_fft, f_fft, norm.(Sx_fft))
+    # plot!(ax, k_fft, f_analytic)
+
+    ax.xlabel[] = "k"
+    ax.ylabel[] = "f"
+
+    f
 end
