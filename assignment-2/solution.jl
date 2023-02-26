@@ -23,6 +23,37 @@ function test_single_spin()
     @time animate_spin_history(lattice_points, S_hist)
 end
 
+function test_1d_chain(n)
+    S = zeros(n, 1, 1, 3)
+    # S = randn(n, 1, 1, 3)
+
+    # randn!(@view S[:, :, 1, 1:2])
+    # S .*= 0.2
+
+    S[:, :, :, 3] .= 1.0
+    S[n÷2, 1, 1, 2] = 1.0
+    S[n÷2, 1, 1, 3] = 0.0
+
+    normalize_spin!(S)
+
+    lattice_points = zeros(n, 3)
+
+    for x in 1:n
+        lattice_points[x, 1] = Float64(x)
+        lattice_points[x, 2] = 0.0
+        lattice_points[x, 3] = 0.0
+    end
+
+    state = init_state(S)
+    params = setup_params(
+        10.0, 3.0, 0.0, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
+    )
+
+    S_hist = @time simulate!(state, params, 1000, 1)
+
+    @time visualize_spin_history_interactive(lattice_points, S_hist)
+end
+
 function test_5x5_grid()
     S = zeros(5, 5, 1, 3)
 
@@ -86,8 +117,8 @@ end
 
 function test_3d_box(nx, ny, nz)
     n = nx * ny * nz
-    S = zeros(nx, ny, nz, 3)
-    # S = randn(nx, ny, nz, 3)
+    # S = zeros(nx, ny, nz, 3)
+    S = randn(nx, ny, nz, 3)
 
     # randn!(@view S[:, :, 1, 1:2])
     # S .*= 0.2
@@ -95,7 +126,7 @@ function test_3d_box(nx, ny, nz)
     # @. S[:, :, 1, 3] =
     #     √(1.0 - (@view S[:, :, 1, 2])^2 - (@view S[:, :, 1, 3])^2)
 
-    S[:, :, :, 3] .= 1.0
+    # S[:, :, :, 3] .= 1.0
     # S[1, 1, 1, 1] = 1.0
     # S[1, 1, 1, 3] = 0.0
 
@@ -113,10 +144,10 @@ function test_3d_box(nx, ny, nz)
 
     state = init_state(S)
     params = setup_params(
-        -10.0, 3.0, 0.1, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
+        10.0, 6.0, 0.1, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
     )
 
-    S_hist = @time simulate!(state, params, 10000, 1)
+    S_hist = @time simulate!(state, params, 4000, 1)
 
     @time visualize_spin_history_interactive(lattice_points, S_hist)
 end
@@ -150,55 +181,21 @@ function test_3d_box_nstaged(nx, ny, nz)
         -10.0, 0.0, 0.1, (@SVector [0.0, 0.0, 0.0]), 0.1, 0.1
     )
 
-    S_hist = @time simulate!(state, params, 1000, 10)
+    S_hist = @time simulate!(state, params, 500, 10)
+
+    for B in 10.0:10.0:200.0
+        params = setup_params(
+            -10.0, 0.0, 0.1, (@SVector [0.0, 0.0, B]), 0.1, 0.1
+        )
+
+        S_hist = @time simulate!(state, params, 100, 10, S_hist, false)
+    end
 
     params = setup_params(
-        -10.0, 0.0, 0.1, (@SVector [0.0, 0.0, 5.0]), 0.1, 0.1
+        -10.0, 0.0, 0.1, (@SVector [0.0, 0.0, 0.0]), 0.1, 0.1
     )
 
-    S_hist = @time simulate!(state, params, 500, 10, S_hist, false)
-
-    params = setup_params(
-        -10.0, 0.0, 0.1, (@SVector [0.0, 0.0, 10.0]), 0.1, 0.1
-    )
-
-    S_hist = @time simulate!(state, params, 500, 10, S_hist, false)
-
-    params = setup_params(
-        -10.0, 0.0, 0.1, (@SVector [0.0, 0.0, 20.0]), 0.1, 0.1
-    )
-
-    S_hist = @time simulate!(state, params, 500, 10, S_hist, false)
-
-    params = setup_params(
-        -10.0, 0.0, 0.1, (@SVector [0.0, 0.0, 30.0]), 0.1, 0.1
-    )
-
-    S_hist = @time simulate!(state, params, 500, 10, S_hist, false)
-
-    params = setup_params(
-        -10.0, 0.0, 0.1, (@SVector [0.0, 0.0, 40.0]), 0.1, 0.1
-    )
-
-    S_hist = @time simulate!(state, params, 500, 10, S_hist, false)
-
-    params = setup_params(
-        -10.0, 0.0, 0.1, (@SVector [0.0, 0.0, 50.0]), 0.1, 0.1
-    )
-
-    S_hist = @time simulate!(state, params, 500, 10, S_hist, false)
-
-    params = setup_params(
-        -10.0, 0.0, 0.1, (@SVector [0.0, 0.0, 60.0]), 0.1, 0.1
-    )
-
-    S_hist = @time simulate!(state, params, 500, 10, S_hist, false)
-
-    params = setup_params(
-        -10.0, 0.0, 0.1, (@SVector [0.0, 0.0, 70.0]), 0.1, 0.1
-    )
-
-    S_hist = @time simulate!(state, params, 500, 10, S_hist, false)
+    S_hist = @time simulate!(state, params, 1000, 10, S_hist, false)
 
     @time visualize_spin_history_interactive(lattice_points, S_hist)
 end

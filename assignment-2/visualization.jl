@@ -28,6 +28,16 @@ function visualize_spin_history_interactive(lattice_points, spin_history)
     f = Figure(resolution=(1000, 1100))
     ax = Axis3(f[1, 1], viewmode=:fitzoom, aspect=:data, perspectiveness=0.5)
 
+    xmin, xmax = extrema(@view lattice_points[:, 1])
+    ymin, ymax = extrema(@view lattice_points[:, 2])
+    zmin, zmax = extrema(@view lattice_points[:, 3])
+
+    limits!(ax,
+        xmin - 1, xmax + 1,
+        ymin - 1, ymax + 1,
+        zmin - 1, zmax + 1
+    )
+
     framerate = 60.0
     frametime = 1.0 / framerate
 
