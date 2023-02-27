@@ -9,9 +9,9 @@ FFTW.set_num_threads(Threads.nthreads())
 
 using Random
 using StaticArrays
-# using GLMakie
-# GLMakie.activate!(title="Assignment-2", framerate=60.0)
-using CairoMakie
+using GLMakie
+GLMakie.activate!(title="Assignment-2", framerate=60.0)
+# using CairoMakie
 
 include("hamiltonian.jl")
 include("simulation.jl")
@@ -221,20 +221,10 @@ function test_1d_dispersion(n, gain=1.0, cutoff=0.0)
 
     S[:, :, :, 3] .= 1.0
 
-    # normalize_spin!(S)
-
-    # lattice_points = zeros(n, 3)
-
-    # for x in 1:n
-    #     lattice_points[x, 1] = Float64(x)
-    #     lattice_points[x, 2] = 0.0
-    #     lattice_points[x, 3] = 0.0
-    # end
-
     state = init_state(S)
     J = 10.0
     dz = 3.0
-    Δt = 1.0
+    Δt = 0.3
     params = setup_params(
         J, dz, 0.1, (@SVector [0.0, 0.0, 0.0]), Δt, 0.1
     )
@@ -259,14 +249,28 @@ function test_1d_dispersion(n, gain=1.0, cutoff=0.0)
 
     max_amp = maximum(norm, Sx_fft)
 
+    gain = Observable(gain)
+    cutoff = Observable(cutoff)
+
     f, ax, _ = heatmap(k_fft, f_fft, norm.(Sx_fft);
-        colorrange=(max_amp * cutoff, max_amp / gain))
+        colorrange=(@lift (max_amp * $cutoff, max_amp / $gain)))
     lines!(ax, k_fft, f_analytic; color=:red)
 
     limits!(ax, -maximum(k_fft), maximum(k_fft), 0, max_f * 1.1)
 
     ax.xlabel[] = "k"
     ax.ylabel[] = "f [1/ps]"
+
+    sl_gain = Slider(f[1, 2], range=range(0, 4, 1000), horizontal=false)
+    sl_cutoff = Slider(f[1, 3], range=range(0.0, 0.1, 1000), horizontal=false)
+
+    lift(sl_gain.value) do g
+        gain[] = 10^g
+    end
+
+    lift(sl_cutoff.value) do c
+        cutoff[] = c
+    end
 
     f
 end
