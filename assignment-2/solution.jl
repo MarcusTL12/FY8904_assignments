@@ -202,7 +202,7 @@ function test_3d_box_nstaged(nx, ny, nz)
     @time visualize_spin_history_interactive(lattice_points, S_hist)
 end
 
-function test_1d_dispersion(n)
+function test_1d_dispersion(n, gain=1.0, cutoff=0.0)
     S = zeros(n, 1, 1, 3)
 
     S[:, :, :, 3] .= 1.0
@@ -220,27 +220,38 @@ function test_1d_dispersion(n)
     state = init_state(S)
     J = 10.0
     dz = 3.0
+    Δt = 1.0
     params = setup_params(
-        J, dz, 0.01, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
+        J, dz, 0.1, (@SVector [0.0, 0.0, 0.0]), Δt, 0.1
     )
 
-    n_steps = 30_000
+    n_steps = ceil(Int, 30n / Δt)
     S_hist = @time simulate!(state, params, n_steps, 1)
 
     Sx = @view S_hist[:, 1, :]
 
     # h/2 = 2067.811956368851 meV * fs
-    f_analytic(k) = (2dz + 2J * (1 - cos(2π * k))) / 2067.811956368851
+    f_analytic(k) = (2dz + 2J * (1 - cos(2π * k))) / 2.067811956368851
 
-    Sx_fft = @time fftshift(fft(Sx))
+    Sx_fft = @time fftshift(rfft(Sx')', 1)
     k_fft = fftshift(fftfreq(n))
-    f_fft = fftshift(fftfreq(n_steps + 1), 1)
+    f_fft = rfftfreq(n_steps + 1, 1000 / Δt)
 
-    f, ax, _ = heatmap(k_fft, f_fft, norm.(Sx_fft))
-    plot!(ax, k_fft, f_analytic)
+    max_f = maximum(abs ∘ f_analytic, k_fft)
+
+    f_ind_range = filter(i -> abs(f_fft[i]) < max_f * 1.5, eachindex(f_fft))
+    f_fft = @view f_fft[f_ind_range]
+    Sx_fft = @view Sx_fft[:, f_ind_range]
+
+    max_amp = maximum(norm, Sx_fft)
+
+    f, ax, _ = heatmap(k_fft, f_fft, norm.(Sx_fft); colorrange=(max_amp * cutoff, max_amp / gain))
+    lines!(ax, k_fft, f_analytic; color=:red)
+
+    limits!(ax, -maximum(k_fft), maximum(k_fft), 0, max_f * 1.1)
 
     ax.xlabel[] = "k"
-    ax.ylabel[] = "f"
+    ax.ylabel[] = "f [1/ps]"
 
     f
 end
@@ -311,6 +322,6 @@ function test_demagnetization(n)
         10.0, 3.0, 15.6, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
     )
 
-    M_hist = @time simulate_magnetization!(state, params, 6000000)
+    M_hist = @time simulate_magnetization!(state, params, 100000)
     lines(M_hist)
 end
