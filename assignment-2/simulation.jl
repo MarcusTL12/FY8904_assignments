@@ -1,5 +1,3 @@
-using Random
-using StaticArrays
 
 abstract type SimState end
 
@@ -49,7 +47,9 @@ function setup_params(J, dz, kT, B, Δt, α)
 end
 
 function init_state(S)
-    SimStateSerial(S, similar(S), similar(S), similar(S), randn(size(S)), similar(S))
+    SimStateSerial(
+        S, similar(S), similar(S), similar(S), randn(size(S)), similar(S)
+    )
 end
 
 function init_state_par(S)
@@ -156,7 +156,7 @@ function do_heun_step!(state::SimStateSerial, params::SimParams)
     # Swap random numbers
     Γ_tmp = state.Γ1
     state.Γ1 = state.Γ2
-    state.Γ2 = Γ_tmp;
+    state.Γ2 = Γ_tmp
 end
 
 function do_heun_step!(state::SimStateParallel, params::SimParams)

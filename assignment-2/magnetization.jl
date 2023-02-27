@@ -1,5 +1,3 @@
-using Statistics
-using StatsBase
 
 function space_averaged_magnetization(S)
     mean(@view S[:, :, :, 3])

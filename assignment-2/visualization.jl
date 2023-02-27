@@ -1,5 +1,3 @@
-using GLMakie
-GLMakie.activate!(title="Assignment-2", framerate=60.0)
 
 function animate_spin_history(lattice_points, spin_history)
     f = Figure(resolution=(3840, 2160))

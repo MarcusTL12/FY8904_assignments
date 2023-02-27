@@ -1,8 +1,22 @@
+using LinearAlgebra
+using ForwardDiff
+using SIMD
+using LoopVectorization
+using Statistics
+using StatsBase
+using FFTW
+FFTW.set_num_threads(Threads.nthreads())
+
+using Random
+using StaticArrays
+# using GLMakie
+# GLMakie.activate!(title="Assignment-2", framerate=60.0)
+using CairoMakie
+
 include("hamiltonian.jl")
 include("simulation.jl")
 include("visualization.jl")
 include("magnetization.jl")
-using FFTW
 
 function test_single_spin()
     Sx0 = randn() * 0.2
@@ -245,7 +259,8 @@ function test_1d_dispersion(n, gain=1.0, cutoff=0.0)
 
     max_amp = maximum(norm, Sx_fft)
 
-    f, ax, _ = heatmap(k_fft, f_fft, norm.(Sx_fft); colorrange=(max_amp * cutoff, max_amp / gain))
+    f, ax, _ = heatmap(k_fft, f_fft, norm.(Sx_fft);
+        colorrange=(max_amp * cutoff, max_amp / gain))
     lines!(ax, k_fft, f_analytic; color=:red)
 
     limits!(ax, -maximum(k_fft), maximum(k_fft), 0, max_f * 1.1)
@@ -351,33 +366,49 @@ function test_demagnetization(n)
 end
 
 function make_phase_diagram(n)
-    M_means = Float64[]
-    M_stdds = Float64[]
+    T_range = range(0.0, 20.0, 200)
 
-    T_range = range(0.0, 20.0, 100)
+    M_means = [0.0 for _ in T_range]
+    M_stdds = [0.0 for _ in T_range]
 
     normal_steps = 10000
     critical_steps = 100 * normal_steps
-    critical_temp = 16.5
+    critical_temp = 16.0
 
     steps_func(kT) = ceil(Int, normal_steps +
                                (critical_steps - normal_steps) *
                                exp(-(kT - critical_temp)^2))
 
-    for kT in T_range
+    total_steps = sum(steps_func, T_range)
+
+    progress_meter = Channel{Int}(spawn=true) do ch
+        done_steps = 0
+        while done_steps < total_steps
+            steps = take!(ch)
+            done_steps += steps
+            println("$done_steps / $total_steps = ",
+                round(100 * done_steps / total_steps, digits=2), "%")
+        end
+    end
+
+    Threads.@threads for i in eachindex(T_range)
+        kT = T_range[i]
+
         params = setup_params(
             10.0, 3.0, kT, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
         )
 
         steps = steps_func(kT)
-        @show kT, steps
+        # @show kT, steps
 
-        M_mean, M_stdd = @time simulate_demagnetization(
+        M_mean, M_stdd = simulate_demagnetization(
             n, steps, 0.1, params
         )
 
-        push!(M_means, M_mean)
-        push!(M_stdds, M_stdd)
+        M_means[i] = M_mean
+        M_stdds[i] = M_stdd
+
+        put!(progress_meter, steps)
     end
 
     f, ax, _ = band(T_range, M_means - M_stdds, M_means + M_stdds)
