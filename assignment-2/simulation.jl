@@ -1,7 +1,18 @@
 using Random
 using StaticArrays
 
-mutable struct SimState
+abstract type SimState end
+
+mutable struct SimStateSerial <: SimState
+    S::Array{Float64,4}
+    Sp::Array{Float64,4}
+    ∂S::Array{Float64,4}
+    ∂Sp::Array{Float64,4}
+    Γ1::Array{Float64,4}
+    Γ2::Array{Float64,4}
+end
+
+mutable struct SimStateParallel <: SimState
     S::Array{Float64,4}
     Sp::Array{Float64,4}
     ∂S::Array{Float64,4}
@@ -38,6 +49,10 @@ function setup_params(J, dz, kT, B, Δt, α)
 end
 
 function init_state(S)
+    SimStateSerial(S, similar(S), similar(S), similar(S), randn(size(S)), similar(S))
+end
+
+function init_state_par(S)
     Γ_recv = Channel{Array{Float64,4}}(1)
 
     Γ_send = Channel{Array{Float64,4}}(1; spawn=true) do ch
@@ -51,7 +66,7 @@ function init_state(S)
     Γ2 = similar(S)
     put!(Γ_send, Γ2)
 
-    state = SimState(
+    state = SimStateParallel(
         S, similar(S), similar(S), similar(S), randn(size(S)), Γ_send, Γ_recv
     )
 
@@ -116,7 +131,35 @@ function do_normalized_euler_step!(S2, S1, ∂S, c)
     end
 end
 
-function do_heun_step!(state::SimState, params::SimParams)
+function do_heun_step!(state::SimStateSerial, params::SimParams)
+    # f(tn, yn)
+    compute_∂S!(state.∂S, state.S, state.Γ1, params)
+
+    # ypn+1
+    @inline do_normalized_euler_step!(state.Sp, state.S, state.∂S, params.Δt)
+
+    # Get new random numbers
+    randn!(state.Γ2)
+
+    # f(tn+1, ypn+1)
+    compute_∂S!(state.∂Sp, state.Sp, state.Γ2, params)
+
+    # 0.5 Δt (f(tn, yn) + f(tn+1, ypn+1))
+    c = 0.5 * params.Δt
+    @turbo for i in eachindex(state.S)
+        state.∂S[i] = c * (state.∂S[i] + state.∂Sp[i])
+    end
+
+    # yn+1
+    @inline do_normalized_euler_step!(state.S, state.S, state.∂S, 1.0)
+
+    # Swap random numbers
+    Γ_tmp = state.Γ1
+    state.Γ1 = state.Γ2
+    state.Γ2 = Γ_tmp;
+end
+
+function do_heun_step!(state::SimStateParallel, params::SimParams)
     # f(tn, yn)
     compute_∂S!(state.∂S, state.S, state.Γ, params)
     put!(state.Γ_send, state.Γ) # Send off Γ to be randomized

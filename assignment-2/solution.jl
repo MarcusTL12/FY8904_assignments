@@ -304,12 +304,12 @@ function test_magnetization(n)
     S = randn(n, n, n, 3)
     normalize_spin!(S)
 
-    state = init_state(S)
+    state = init_state_par(S)
     params = setup_params(
-        10.0, 3.0, 0.0, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
+        20.0, 3.0, 0.0, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
     )
 
-    M_hist = @time simulate_magnetization!(state, params, 10000)
+    M_hist = @time simulate_magnetization!(state, params, 100000)
     lines(M_hist)
 end
 
@@ -317,11 +317,71 @@ function test_demagnetization(n)
     S = zeros(n, n, n, 3)
     S[:, :, :, 3] .= 1.0
 
-    state = init_state(S)
+    state = init_state_par(S)
     params = setup_params(
-        10.0, 3.0, 15.6, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
+        10.0, 3.0, 10.0, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
     )
 
-    M_hist = @time simulate_magnetization!(state, params, 100000)
-    lines(M_hist)
+    n_steps = 1000
+    M_hist = @time simulate_magnetization!(state, params, n_steps)
+    f, _, _ = lines(M_hist)
+    ax2 = Axis(f[2, 1])
+
+    data_points = @view M_hist[n_steps÷100:end]
+
+    pts = 0:100:length(data_points)
+    lines!(ax2, pts, autocor(data_points, pts))
+
+    M_mean = mean(data_points)
+    M_stdd = std(data_points)
+
+    @show M_mean M_stdd
+
+    uncorr_spacing = n_steps ÷ 100
+    data_points_uncorr = @view data_points[1:uncorr_spacing:end]
+    M_mean = mean(data_points_uncorr)
+    M_stdd = std(data_points_uncorr)
+
+    @show M_mean M_stdd
+
+    scatter!(ax2, [uncorr_spacing], autocor(data_points, [uncorr_spacing]);
+        color=:red)
+
+    f
+end
+
+function make_phase_diagram(n)
+    M_means = Float64[]
+    M_stdds = Float64[]
+
+    T_range = range(0.0, 20.0, 100)
+
+    normal_steps = 10000
+    critical_steps = 100 * normal_steps
+    critical_temp = 16.5
+
+    steps_func(kT) = ceil(Int, normal_steps +
+                               (critical_steps - normal_steps) *
+                               exp(-(kT - critical_temp)^2))
+
+    for kT in T_range
+        params = setup_params(
+            10.0, 3.0, kT, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
+        )
+
+        steps = steps_func(kT)
+        @show kT, steps
+
+        M_mean, M_stdd = @time simulate_demagnetization(
+            n, steps, 0.1, params
+        )
+
+        push!(M_means, M_mean)
+        push!(M_stdds, M_stdd)
+    end
+
+    f, ax, _ = band(T_range, M_means - M_stdds, M_means + M_stdds)
+    lines!(ax, T_range, M_means)
+
+    f
 end
