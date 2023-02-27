@@ -1,6 +1,7 @@
 include("hamiltonian.jl")
 include("simulation.jl")
 include("visualization.jl")
+include("magnetization.jl")
 using FFTW
 
 function test_single_spin()
@@ -286,4 +287,30 @@ function test_1d_dispersion_antiferromagnet(n)
     ax.ylabel[] = "f"
 
     f
+end
+
+function test_magnetization(n)
+    S = randn(n, n, n, 3)
+    normalize_spin!(S)
+
+    state = init_state(S)
+    params = setup_params(
+        10.0, 3.0, 0.0, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
+    )
+
+    M_hist = @time simulate_magnetization!(state, params, 10000)
+    lines(M_hist)
+end
+
+function test_demagnetization(n)
+    S = zeros(n, n, n, 3)
+    S[:, :, :, 3] .= 1.0
+
+    state = init_state(S)
+    params = setup_params(
+        10.0, 3.0, 15.6, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
+    )
+
+    M_hist = @time simulate_magnetization!(state, params, 6000000)
+    lines(M_hist)
 end

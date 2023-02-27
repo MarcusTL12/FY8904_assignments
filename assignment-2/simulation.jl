@@ -161,3 +161,14 @@ function simulate!(state::SimState, params::SimParams,
 
     reshape(S_hist, n, 3, length(S_hist) ÷ 3n)
 end
+
+function simulate_magnetization!(state::SimState, params::SimParams, n_steps)
+    M_hist = [space_averaged_magnetization(state.S)]
+
+    for _ in 1:n_steps
+        do_heun_step!(state, params)
+        push!(M_hist, space_averaged_magnetization(state.S))
+    end
+
+    M_hist
+end
