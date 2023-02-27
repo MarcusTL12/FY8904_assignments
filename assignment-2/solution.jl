@@ -418,5 +418,8 @@ function make_phase_diagram(n)
     f, ax, _ = band(T_range, M_means - M_stdds, M_means + M_stdds)
     lines!(ax, T_range, M_means)
 
+    xlabel!(ax, "kT")
+    ylabel!(ax, "M(kT)")
+
     f
 end
