@@ -133,8 +133,8 @@ end
 
 function test_3d_box(nx, ny, nz)
     n = nx * ny * nz
-    # S = zeros(nx, ny, nz, 3)
-    S = randn(nx, ny, nz, 3)
+    S = zeros(nx, ny, nz, 3)
+    # S = randn(nx, ny, nz, 3)
 
     # randn!(@view S[:, :, 1, 1:2])
     # S .*= 0.2
@@ -142,9 +142,18 @@ function test_3d_box(nx, ny, nz)
     # @. S[:, :, 1, 3] =
     #     √(1.0 - (@view S[:, :, 1, 2])^2 - (@view S[:, :, 1, 3])^2)
 
-    # S[:, :, :, 3] .= 1.0
-    # S[1, 1, 1, 1] = 1.0
-    # S[1, 1, 1, 3] = 0.0
+    S[:, :, :, 3] .= 1.0
+
+    xq = nx ÷ 4
+    yq = ny ÷ 4
+
+    # 1d
+    # S[fld(nx, 2):cld(nx, 2), 1, 1, 1] .= 0.001
+    # S[begin + xq:end - xq, 1, 1, 3] .= -1.0
+
+    # 2d
+    S[fld(nx, 2):cld(nx, 2), fld(ny, 2):cld(ny, 2), 1, 1] .= 0.001
+    S[begin + xq:end - xq, begin + yq:end - yq, 1, 3] .= -1.0
 
     normalize_spin!(S)
 
@@ -160,7 +169,7 @@ function test_3d_box(nx, ny, nz)
 
     state = init_state(S)
     params = setup_params(
-        10.0, 3.0, 0.0, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
+        10.0, 3.0, 0.0, (@SVector [0.0, 0.0, 3.0]), 1.0, 0.01
     )
 
     S_hist = @time simulate!(state, params, 10000, 10)
@@ -325,7 +334,7 @@ function test_magnetization(n)
 
     state = init_state_par(S)
     params = setup_params(
-        20.0, 3.0, 0.0, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
+        10.0, 3.0, 0.0, (@SVector [0.0, 0.0, 3.0]), 1.0, 0.01
     )
 
     M_hist = @time simulate_magnetization!(state, params, 100000)
