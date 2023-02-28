@@ -107,3 +107,34 @@ function visualize_spin_history_interactive(lattice_points, spin_history)
 
     f
 end
+
+function spin_to_HSL(sx, sy, sz)
+    HSL(atand(sx, sy), 1.0, (sz + 1.0) * 0.5)
+end
+
+function visualize_spin_surface!(S)
+    @inbounds [RGB(spin_to_HSL(S[x, y, 1], S[x, y, 2], S[x, y, 3]))
+               for x in axes(S, 1), y in axes(S, 1)]
+end
+
+function animate_2d_spin_history(S_hist, nx, ny)
+    S_hist = reshape(S_hist, nx, ny, 3, size(S_hist, 3))
+
+    dir = "tmp_frames"
+
+    rm(dir; recursive=true, force=true)
+    mkdir(dir)
+
+    @time for i in axes(S_hist, 4)
+        img = visualize_spin_surface(@view S_hist[:, :, :, i])
+
+        save("$dir/$i.png", img)
+    end
+
+    make_mp4(dir, "tmp_anim")
+end
+
+function make_mp4(framesdir, outdir; nth=Threads.nthreads())
+    FFMPEG.exe(`-threads $nth -framerate 60 -i $framesdir/%d.png -c:v libx264 \
+    -pix_fmt yuv420p $outdir/out.mp4 -y`)
+end

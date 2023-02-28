@@ -215,3 +215,57 @@ function simulate_magnetization!(state::SimState, params::SimParams, n_steps)
 
     M_hist
 end
+
+function simulate_2d_surface!(state::SimState, params::SimParams,
+    n_frames, n_steps_per_frame)
+
+    nx, ny, nz, _ = size(state.S)
+    @assert nz == 1
+
+    anim_threads = max(1, Threads.nthreads() - 2)
+    dir = "tmp_frames"
+
+    rm(dir; recursive=true, force=true)
+    mkdir(dir)
+
+    buffer_ch = Channel{Array{Float64,4}}(anim_threads + 2)
+
+    for _ in 1:anim_threads+1
+        put!(buffer_ch, similar(state.S))
+    end
+
+    workers = [
+        Channel{Tuple{Int,Array{Float64,4}}}(; spawn=false) do work
+            while true
+                i, S = take!(work)
+                Sr = reshape(S, nx, ny, 3)
+                img = visualize_spin_surface(Sr)
+                save("$dir/$i.png", img)
+                put!(buffer_ch, S)
+            end
+        end for _ in 1:anim_threads
+    ]
+
+    w = 1
+
+    for i in 1:n_frames
+        for _ in 1:n_steps_per_frame
+            do_heun_step!(state, params)
+        end
+
+        buffer = take!(buffer_ch)
+        copy!(buffer, state.S)
+        put!(workers[w], (i, buffer))
+        w += 1
+        if w > anim_threads
+            w = 1
+        end
+    end
+
+    # close(worker)
+    for worker in workers
+        close(worker)
+    end
+
+    make_mp4(dir, "tmp_anim")
+end
