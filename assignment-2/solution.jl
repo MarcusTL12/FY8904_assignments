@@ -160,10 +160,10 @@ function test_3d_box(nx, ny, nz)
 
     state = init_state(S)
     params = setup_params(
-        10.0, 6.0, 0.1, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
+        10.0, 3.0, 0.0, (@SVector [0.0, 0.0, 0.0]), 1.0, 0.1
     )
 
-    S_hist = @time simulate!(state, params, 4000, 1)
+    S_hist = @time simulate!(state, params, 10000, 10)
 
     @time visualize_spin_history_interactive(lattice_points, S_hist)
 end
