@@ -22,6 +22,15 @@ function generate_koch!(corners, dir, l)
     end
 end
 
+function make_koch_square(l)
+    corners = [0 + 0im]
+    generate_koch!(corners, 1 + 0im, l)
+    generate_koch!(corners, 0 + 1im, l)
+    generate_koch!(corners, -1 + 0im, l)
+    generate_koch!(corners, 0 - 1im, l)
+    corners
+end
+
 function plot_curve(corners)
     n_corners = length(corners)
     corners = reshape(reinterpret(Int, corners), 2, n_corners)
