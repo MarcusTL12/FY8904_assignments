@@ -1,4 +1,3 @@
-using Plots
 
 const koch_generator = (
     1 + 0im,
