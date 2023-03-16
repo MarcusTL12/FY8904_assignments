@@ -45,7 +45,7 @@ function fill_interior!(lattice)
     )
 
     queue = Deque{NTuple{2,Int}}()
-    start = size(lattice) .÷ 2
+    start = cld.(size(lattice), 2)
     lattice[start...] = interior
     push!(queue, start)
 
