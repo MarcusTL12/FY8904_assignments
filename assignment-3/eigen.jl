@@ -31,7 +31,7 @@ end
 Base.size(A::SymDiags) = (A.n, A.n)
 
 function Base.getindex(A::SymDiags, i::Int)
-    A[divrem(i, A.n)...]
+    A[fldmod1(i, A.n)...]
 end
 
 function Base.getindex(A::SymDiags{T}, i::Int, j::Int) where {T}
