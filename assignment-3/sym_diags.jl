@@ -49,3 +49,29 @@ function Base.getindex(A::SymDiags{T}, i::Int, j::Int) where {T}
         zero(T)
     end
 end
+
+function LinearAlgebra.mul!(y, A::SymDiags{T}, x) where {T}
+    start = 1
+
+    if A.diagonals[1][1] == 0
+        start = 2
+
+        for (i, v) in enumerate(A.diagonals[1][2])
+            y[i] = v * x[i]
+        end
+    else
+        fill!(y, 0.0)
+    end
+
+    for dj in start:length(A.diagonals)
+        diag_n, diag_v = A.diagonals[dj]
+        for (i, v) in enumerate(diag_v)
+            j = i + diag_n
+
+            y[i] += v * x[j]
+            y[j] += v * x[i]
+        end
+    end
+
+    y
+end
