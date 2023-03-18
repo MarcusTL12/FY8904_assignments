@@ -78,10 +78,14 @@ function make_lattice(l, n)
     setup_lattice(corners, n)
 end
 
+function get_h(l, n)
+    1 / (4^l * n)
+end
+
 # Returns an array of ranges of lattice points that are adjacent in the x
 # direction
 function make_x_neighbour_ranges(lattice)
-    x_neighbour_ranges = UnitRange{Int64}[]
+    xnr = UnitRange{Int64}[]
 
     start = -1
 
@@ -92,17 +96,17 @@ function make_x_neighbour_ranges(lattice)
             end
         elseif x <= 0
             stop = lattice[i-1]
-            push!(x_neighbour_ranges, start:stop)
+            push!(xnr, start:stop)
             start = -1
         end
     end
 
-    x_neighbour_ranges
+    xnr
 end
 
 # Returns an array of 3 ints of the structure (top_start, bottom_start, length)
 function make_y_neighbour_ranges(lattice)
-    y_neighbour_ranges = NTuple{3,Int}[]
+    ynr = NTuple{3,Int}[]
 
     top_start = -1
     bottom_start = -1
@@ -119,12 +123,59 @@ function make_y_neighbour_ranges(lattice)
             elseif x <= 0 || y <= 0
                 top_stop = lattice[i-1, j]
                 l = length(top_start:top_stop)
-                push!(y_neighbour_ranges, (top_start, bottom_start, l))
+                push!(ynr, (top_start, bottom_start, l))
                 top_start = -1
                 bottom_start = -1
             end
         end
     end
 
-    y_neighbour_ranges
+    ynr
+end
+
+
+# Todo: add functions to make similar neighbour ranges for more distant
+# than adjacent for higher order finite difference stencils.
+
+function range_chunks(r, n)
+    @inbounds begin
+        rv = @inline r[1:n:end-(n-1)]
+        rr = @inline r[length(rv)*n+1:end]
+        rv, rr
+    end
+end
+
+# Computes
+# -∇u = A * u
+# in place. A is represented by xnr, ynr and hinv
+#
+# n∇u = -∇u
+# hinv2 = 1/h^2
+#
+# -∇u[i,j] = (4u[i,j] - u[i+1,j] - u[i-1,j] - u[i,j+1] - u[i,j-1]) / h^2
+function compute_5p_laplacian!(n∇u, u, xnr, ynr, hinv2)
+    # 4u[i, j] contribution
+    @inbounds for i in eachindex(n∇u, u)
+        n∇u[i] = u[i] * 4hinv2
+    end
+
+    # - u[i+1,j] - u[i-1,j] contribution
+    @inbounds @fastmath for r in xnr
+        @simd for i in r[1:end-1]
+            n∇u[i] -= hinv2 * u[i+1]
+        end
+        @simd for i in r[1:end-1]
+            n∇u[i+1] -= hinv2 * u[i]
+        end
+    end
+
+    # - u[i,j+1] - u[i,j-1] contribution
+    @inbounds @fastmath for (ts, bs, l) in ynr
+        boff = bs - ts
+        @simd for i in ts:ts+l-1
+            j = i + boff
+            n∇u[i] -= hinv2 * u[j]
+            n∇u[j] -= hinv2 * u[i]
+        end
+    end
 end
