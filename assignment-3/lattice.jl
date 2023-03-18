@@ -50,7 +50,7 @@ function fill_interior!(lattice)
     lattice[start...] = interior
     push!(queue, start)
 
-    while !isempty(queue)
+    @inbounds while !isempty(queue)
         p = popfirst!(queue)
         for d in dirs
             np = p .+ d
