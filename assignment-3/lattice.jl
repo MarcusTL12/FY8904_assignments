@@ -78,6 +78,22 @@ function make_lattice(l, n)
     setup_lattice(corners, n)
 end
 
-function make_x_neighbour_ranges(indexed_lattice)
-    
+function make_x_neighbour_ranges(lattice)
+    x_neighbour_ranges = UnitRange{Int64}[]
+
+    start = -1
+
+    for i in 1:length(lattice)-1
+        if start == -1
+            if lattice[i] > 0
+                start = lattice[i]
+            end
+        elseif lattice[i] <= 0
+            stop = lattice[i - 1]
+            push!(x_neighbour_ranges, start:stop)
+            start = -1
+        end
+    end
+
+    x_neighbour_ranges
 end
