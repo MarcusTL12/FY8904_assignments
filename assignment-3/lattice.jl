@@ -78,22 +78,53 @@ function make_lattice(l, n)
     setup_lattice(corners, n)
 end
 
+# Returns an array of ranges of lattice points that are adjacent in the x
+# direction
 function make_x_neighbour_ranges(lattice)
     x_neighbour_ranges = UnitRange{Int64}[]
 
     start = -1
 
-    for i in 1:length(lattice)-1
+    for (i, x) in enumerate(lattice)
         if start == -1
-            if lattice[i] > 0
-                start = lattice[i]
+            if x > 0
+                start = x
             end
-        elseif lattice[i] <= 0
-            stop = lattice[i - 1]
+        elseif x <= 0
+            stop = lattice[i-1]
             push!(x_neighbour_ranges, start:stop)
             start = -1
         end
     end
 
     x_neighbour_ranges
+end
+
+# Returns an array of 3 ints of the structure (top_start, bottom_start, length)
+function make_y_neighbour_ranges(lattice)
+    y_neighbour_ranges = NTuple{3,Int}[]
+
+    top_start = -1
+    bottom_start = -1
+
+    for j in 2:size(lattice, 2)-1
+        for i in axes(lattice, 1)
+            x = lattice[i, j]
+            y = lattice[i, j+1]
+            if top_start == -1
+                if x > 0 && y > 0
+                    top_start = x
+                    bottom_start = y
+                end
+            elseif x <= 0 || y <= 0
+                top_stop = lattice[i-1, j]
+                l = length(top_start:top_stop)
+                push!(y_neighbour_ranges, (top_start, bottom_start, l))
+                top_start = -1
+                bottom_start = -1
+            end
+        end
+    end
+
+    y_neighbour_ranges
 end
