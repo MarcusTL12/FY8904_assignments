@@ -1,7 +1,7 @@
 
-const outside = 0
-const boundary = 1
-const interior = 2
+const outside = -2
+const boundary = -1
+const interior = 0
 
 function setup_lattice(corners, n)
     minx, maxx = extrema(real, corners)
@@ -15,7 +15,7 @@ function setup_lattice(corners, n)
     xn = (xl - 1) * n + 1
     yn = (yl - 1) * n + 1
 
-    lattice = zeros(Int32, xn, yn)
+    lattice = fill(outside, xn, yn)
 
     x = (real(first(corners)) - minx) * n + 1
     y = (imag(first(corners)) - miny) * n + 1
@@ -32,6 +32,7 @@ function setup_lattice(corners, n)
     end
 
     fill_interior!(lattice)
+    index_lattice!(lattice)
 
     lattice
 end
@@ -61,7 +62,22 @@ function fill_interior!(lattice)
     end
 end
 
-function test_lattice(l, n)
+function index_lattice!(lattice)
+    j = 1
+
+    for (i, x) in enumerate(lattice)
+        if x == interior
+            lattice[i] = j
+            j += 1
+        end
+    end
+end
+
+function make_lattice(l, n)
     corners = make_koch_square(l)
     setup_lattice(corners, n)
+end
+
+function make_x_neighbour_ranges(indexed_lattice)
+    
 end
