@@ -1,7 +1,11 @@
 using Plots
 using DataStructures
-using LoopVectorization
-using SIMD
+using Arpack
+using LinearMaps
+using SparseArrays
+using KrylovKit
+using ArnoldiMethod
 
 include("fractal.jl")
 include("lattice.jl")
+include("5point-stencil.jl")
