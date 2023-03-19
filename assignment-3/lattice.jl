@@ -102,3 +102,7 @@ function unpack_mode(lattice, mode)
 
     unpacked_mode
 end
+
+function plotmode(lattice, v, mode)
+    heatmap(unpack_mode(lattice, (@view v[:, mode])); ratio=1, size=(1000, 800))
+end
