@@ -82,3 +82,23 @@ end
 function get_h(l, n)
     1 / (4^l * n)
 end
+
+function unpack_mode(lattice, mode)
+    unpacked_mode = fill(NaN, size(lattice))
+
+    mn, mx = extrema(mode)
+    s = 1.0
+    if abs(mn) > abs(mx)
+        s = -1.0
+    end
+
+    for (i, j) in enumerate(lattice)
+        if j > 0
+            unpacked_mode[i] = s * mode[j]
+        elseif j == -1
+            unpacked_mode[i] = 0.0
+        end
+    end
+
+    unpacked_mode
+end
