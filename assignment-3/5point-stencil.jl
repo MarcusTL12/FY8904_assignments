@@ -40,6 +40,20 @@ function reduce_full_matrix(A, lattice)
     A[in_inds, in_inds]
 end
 
+function make_reduced_matrix(lattice, h)
+    hinv2 = 1 / h^2
+
+    w = size(lattice, 1)
+
+    d0 = [4hinv2 for _ in 1:length(lattice)]
+    d1 = [-hinv2 for _ in 1:length(lattice)-1]
+    dw = [-hinv2 for _ in 1:length(lattice)-w]
+
+    A = spdiagm(0 => d0, 1 => d1, -1 => d1, w => dw, -w => dw)
+
+    reduce_full_matrix(A, lattice)
+end
+
 # Returns an array of ranges of lattice points that are adjacent in the x
 # direction
 function make_x_neighbour_ranges(lattice)
