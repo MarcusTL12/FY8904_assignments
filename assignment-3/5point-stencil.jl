@@ -145,7 +145,8 @@ function make_linmap(lattice, l, n)
     ynr = make_y_neighbour_ranges(lattice)
     hinv2 = 1 / h^2
 
-    LinearMap(maximum(lattice); issymmetric=true, ismutating=true) do n∇u, u
+    LinearMap(maximum(lattice);
+        issymmetric=true, ismutating=true, isposdef=true) do n∇u, u
         compute_5p_laplacian!(n∇u, u, xnr, ynr, hinv2)
         n∇u
     end
