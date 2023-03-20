@@ -22,9 +22,13 @@ function animate_modes(e, v, lattice, h)
         -max_z_displacement, max_z_displacement,
     )
 
+    colorrange = (-max_z_displacement, max_z_displacement)
+
     unpacked_mode = Observable(unpack_mode(lattice, (@view v[:, 1])))
-    GLMakie.surface!(ax3d, xy_range, xy_range, unpacked_mode)
-    GLMakie.heatmap!(ax2d, xy_range, xy_range, unpacked_mode)
+    GLMakie.surface!(ax3d, xy_range, xy_range, unpacked_mode;
+        colorrange=colorrange)
+    GLMakie.heatmap!(ax2d, xy_range, xy_range, unpacked_mode;
+        colorrange=colorrange)
 
     mode_i = Observable(1)
 
