@@ -83,8 +83,8 @@ function get_h(l, n)
     1 / (4^l * n)
 end
 
-function unpack_mode(lattice, mode)
-    unpacked_mode = fill(NaN, size(lattice))
+function unpack_mode!(unpacked_mode, lattice, mode)
+    fill!(unpacked_mode, NaN)
 
     mn, mx = extrema(mode)
     s = 1.0
@@ -101,6 +101,10 @@ function unpack_mode(lattice, mode)
     end
 
     unpacked_mode
+end
+
+function unpack_mode(lattice, mode)
+    unpack_mode!(zeros(size(lattice)), lattice, mode)
 end
 
 function plotmode(lattice, v, mode)
