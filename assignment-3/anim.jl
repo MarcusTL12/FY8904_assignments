@@ -26,11 +26,37 @@ function animate_modes(e, v, lattice, h)
     mode_i = Observable(1)
 
     cur_max_z_displacement = @lift maximum(abs, (@view v[:, $mode_i]))
+
     colorrange = @lift (-$cur_max_z_displacement, $cur_max_z_displacement)
 
     unpacked_mode = Observable(unpack_mode(lattice, (@view v[:, 1])))
-    GLMakie.surface!(ax3d, xy_range, xy_range, unpacked_mode;
-        colorrange=colorrange)
+
+    gain_sl = Slider(f[1, 2][1, 1][1, 1], range=0.5:0.01:2.0, startvalue=1.0,
+        horizontal=false).value
+    Label(f[1, 2][1, 1][2, 1], "Gain: ↑\nFlip sign: ↓")
+    sign_tgl = Toggle(f[1, 2][1, 1][3, 1]).active
+    gain = @lift $sign_tgl ? -$gain_sl : $gain_sl
+    scaled_mode = Observable(copy(unpacked_mode[]))
+
+    on(unpacked_mode) do mode
+        smode = scaled_mode[]
+        g = gain[]
+        for (i, x) in enumerate(mode)
+            smode[i] = x * g
+        end
+        scaled_mode[] = smode
+    end
+
+    on(gain) do g
+        smode = scaled_mode[]
+        for (i, x) in enumerate(unpacked_mode[])
+            smode[i] = x * g
+        end
+        scaled_mode[] = smode
+    end
+
+    GLMakie.surface!(ax3d, xy_range, xy_range, scaled_mode;
+        colorrange=(@lift $colorrange .* $gain_sl))
     hm = GLMakie.heatmap!(ax2d, xy_range, xy_range, unpacked_mode;
         colorrange=colorrange)
 
@@ -46,7 +72,9 @@ function animate_modes(e, v, lattice, h)
     dec_button = Button(config_panel[2, 1], label="▼")
     _ = Label(config_panel[1, 2],
         (@lift begin
-            @sprintf "Mode: %i/%i \nω/v = %.1f" $mode_i length(e) e[$mode_i]
+            @sprintf "Gain: %.2f\n\
+Mode: %i/%i \n\
+ω/v = %.1f" $gain $mode_i length(e) e[$mode_i]
         end))
     mode_box = Textbox(config_panel[2, 2], validator=Int,
         placeholder=":")
