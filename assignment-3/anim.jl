@@ -2,7 +2,7 @@ using GLMakie
 GLMakie.activate!(title="Assignment-3", framerate=60.0)
 
 function animate_modes(e, v, lattice, h)
-    f = Figure(resolution=(1100, 1100))
+    f = Figure(resolution=(1100, 1600))
 
     max_z_displacement = maximum(abs, v)
 
@@ -14,7 +14,7 @@ function animate_modes(e, v, lattice, h)
 
     ax3d = Axis3(f[1, 1][1, 1],
         viewmode=:fitzoom, aspect=aspect, perspectiveness=0.5)
-    ax2d = Axis(f[1, 1][2, 1], aspect=1)
+    ax2d = Axis(f[1, 1][2, 1][1, 1], aspect=1)
 
     limits!(ax3d,
         0.0, xy_range[end],
@@ -22,15 +22,18 @@ function animate_modes(e, v, lattice, h)
         -max_z_displacement, max_z_displacement,
     )
 
-    colorrange = (-max_z_displacement, max_z_displacement)
+    mode_i = Observable(1)
+
+    cur_max_z_displacement = @lift maximum(abs, (@view v[:, $mode_i]))
+    colorrange = @lift (-$cur_max_z_displacement, $cur_max_z_displacement)
 
     unpacked_mode = Observable(unpack_mode(lattice, (@view v[:, 1])))
     GLMakie.surface!(ax3d, xy_range, xy_range, unpacked_mode;
         colorrange=colorrange)
-    GLMakie.heatmap!(ax2d, xy_range, xy_range, unpacked_mode;
+    hm = GLMakie.heatmap!(ax2d, xy_range, xy_range, unpacked_mode;
         colorrange=colorrange)
-
-    mode_i = Observable(1)
+    
+    Colorbar(f[1, 1][2, 1][1, 2], hm)
 
     on(mode_i) do i
         mode = unpacked_mode[]
