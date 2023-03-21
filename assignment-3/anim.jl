@@ -1,4 +1,5 @@
 using GLMakie
+using Printf
 GLMakie.activate!(title="Assignment-3", framerate=60.0)
 
 function animate_modes(e, v, lattice, h)
@@ -32,7 +33,7 @@ function animate_modes(e, v, lattice, h)
         colorrange=colorrange)
     hm = GLMakie.heatmap!(ax2d, xy_range, xy_range, unpacked_mode;
         colorrange=colorrange)
-    
+
     Colorbar(f[1, 1][2, 1][1, 2], hm)
 
     on(mode_i) do i
@@ -43,9 +44,12 @@ function animate_modes(e, v, lattice, h)
 
     inc_button = Button(config_panel[1, 1], label="▲")
     dec_button = Button(config_panel[2, 1], label="▼")
-    _ = Label(config_panel[1, 2], (@lift "Mode: $($mode_i)"))
+    _ = Label(config_panel[1, 2],
+        (@lift begin
+            @sprintf "Mode: %i/%i \nω/v = %.1f" $mode_i length(e) e[$mode_i]
+        end))
     mode_box = Textbox(config_panel[2, 2], validator=Int,
-        placeholder="Enter mode number")
+        placeholder=":")
     mode_box.stored_string[] = "1"
 
     on(mode_box.stored_string) do s
