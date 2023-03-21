@@ -55,6 +55,17 @@ function animate_modes(e, v, lattice, h)
         scaled_mode[] = smode
     end
 
+    t = Observable(0.0)
+    time_evolving_mode = Observable(copy(scaled_mode[]))
+
+    on(t) do t
+        tmode = time_evolving_mode[]
+        ω = √(e[mode_i[]])
+        for (i, x) in enumerate(scaled_mode[])
+            tmode[i] = x * cos(ω * t)
+        end
+    end
+
     GLMakie.surface!(ax3d, xy_range, xy_range, scaled_mode;
         colorrange=(@lift $colorrange .* $gain_sl))
     hm = GLMakie.heatmap!(ax2d, xy_range, xy_range, unpacked_mode;
@@ -68,8 +79,8 @@ function animate_modes(e, v, lattice, h)
         unpacked_mode[] = mode
     end
 
-    inc_button = Button(config_panel[1, 1], label="▲")
-    dec_button = Button(config_panel[2, 1], label="▼")
+    inc_button = Button(config_panel[1, 1][1, 1], label="▲")
+    dec_button = Button(config_panel[1, 1][1, 2], label="▼")
     _ = Label(config_panel[1, 2],
         (@lift begin
             @sprintf "Gain: %.2f\n\
@@ -93,6 +104,35 @@ Mode: %i/%i \n\
     on(dec_button.clicks) do _
         if mode_i[] > 1
             mode_i[] -= 1
+        end
+    end
+
+    isrunning = Observable(false)
+    play_label = @lift $isrunning ? "▮▮" : " ▸ "
+    play_button = Button(config_panel[2, 1][1, 1], label=play_label)
+    reset_button = Button(config_panel[2, 1][1, 2]; label="⬛")
+
+    playback_speed = 1 / e[1]
+    framerate = 60.0
+    frametime = 1.0 / framerate
+
+    on(play_button.clicks) do _
+        if !isrunning[]
+            isrunning[] = true
+            @async begin
+                timer = (time)
+
+                while isrunning[]
+                    target_time = timer + frametime
+                    curtime = time()
+                    sleep(max(target_time - curtime, 0.0))
+                    timer = target_time
+
+                    t[] += playback_speed * frametime
+                end
+            end
+        else
+            isrunning[] = false
         end
     end
 
