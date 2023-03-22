@@ -33,10 +33,15 @@ function animate_modes(e, v, lattice, h)
 
     gain_sl = Slider(f[1, 2][1, 1][1, 1], range=0.5:0.01:2.0, startvalue=1.0,
         horizontal=false).value
-    Label(f[1, 2][1, 1][2, 1], "Gain: ↑\nFlip sign: ↓")
+    Label(f[1, 2][1, 1][2, 1],
+        @lift @sprintf "Gain: ↑ = %.2f\nFlip sign: ↓" $gain_sl)
     sign_tgl = Toggle(f[1, 2][1, 1][3, 1]).active
     gain = @lift $sign_tgl ? -$gain_sl : $gain_sl
     scaled_mode = Observable(copy(unpacked_mode[]))
+
+    speed_sl = Slider(f[1, 2][1, 1][1, 2], range=0.0:0.01:10.0, startvalue=1.0,
+        horizontal=false).value
+    Label(f[1, 2][1, 1][2, 2], @lift @sprintf "Speed: %.2f" $speed_sl)
 
     on(unpacked_mode) do mode
         smode = scaled_mode[]
@@ -64,9 +69,20 @@ function animate_modes(e, v, lattice, h)
         for (i, x) in enumerate(scaled_mode[])
             tmode[i] = x * cos(ω * t)
         end
+        time_evolving_mode[] = tmode
     end
 
-    GLMakie.surface!(ax3d, xy_range, xy_range, scaled_mode;
+    on(scaled_mode) do m
+        tmode = time_evolving_mode[]
+        ω = √(e[mode_i[]])
+        t_ = t[]
+        for (i, x) in enumerate(m)
+            tmode[i] = x * cos(ω * t_)
+        end
+        time_evolving_mode[] = tmode
+    end
+
+    GLMakie.surface!(ax3d, xy_range, xy_range, time_evolving_mode;
         colorrange=(@lift $colorrange .* $gain_sl))
     hm = GLMakie.heatmap!(ax2d, xy_range, xy_range, unpacked_mode;
         colorrange=colorrange)
@@ -83,9 +99,8 @@ function animate_modes(e, v, lattice, h)
     dec_button = Button(config_panel[1, 1][1, 2], label="▼")
     _ = Label(config_panel[1, 2],
         (@lift begin
-            @sprintf "Gain: %.2f\n\
-Mode: %i/%i \n\
-ω/v = %.1f" $gain $mode_i length(e) e[$mode_i]
+            @sprintf "Mode: %i/%i \n\
+ω/v = %.1f" $mode_i length(e) √(e[$mode_i])
         end))
     mode_box = Textbox(config_panel[2, 2], validator=Int,
         placeholder=":")
@@ -112,7 +127,7 @@ Mode: %i/%i \n\
     play_button = Button(config_panel[2, 1][1, 1], label=play_label)
     reset_button = Button(config_panel[2, 1][1, 2]; label="⬛")
 
-    playback_speed = 1 / e[1]
+    playback_speed = @lift $speed_sl * 2π / e[1]
     framerate = 60.0
     frametime = 1.0 / framerate
 
@@ -120,7 +135,7 @@ Mode: %i/%i \n\
         if !isrunning[]
             isrunning[] = true
             @async begin
-                timer = (time)
+                timer = time()
 
                 while isrunning[]
                     target_time = timer + frametime
@@ -128,12 +143,17 @@ Mode: %i/%i \n\
                     sleep(max(target_time - curtime, 0.0))
                     timer = target_time
 
-                    t[] += playback_speed * frametime
+                    t[] += playback_speed[] * frametime
                 end
             end
         else
             isrunning[] = false
         end
+    end
+
+    on(reset_button.clicks) do _
+        isrunning[] = false
+        t[] = 0.0
     end
 
     f
