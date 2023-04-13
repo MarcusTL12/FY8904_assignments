@@ -21,7 +21,7 @@ function setup_lattice(corners, n)
     x = (real(first(corners)) - minx) * n + 1
     y = (imag(first(corners)) - miny) * n + 1
 
-    lattice[x, y] = 1 # Should be boundary??
+    lattice[x, y] = boundary
 
     for i in 1:length(corners)-1
         d = corners[i+1] - corners[i]
