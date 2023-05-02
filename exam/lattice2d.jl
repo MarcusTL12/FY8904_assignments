@@ -140,6 +140,26 @@ function get_energy_contrib_i(interaction_matrix, monomer_types,
     energy
 end
 
+function calculate_end2end_dist(chain)
+    hypot((chain[1] .- chain[end])...)
+end
+
+function calculate_CoM(chain)
+    CoM = (0.0, 0.0)
+
+    for coord in chain
+        CoM = CoM .+ coord
+    end
+
+    CoM ./ length(chain)
+end
+
+function calculate_RoG(chain)
+    CoM = calculate_CoM(chain)
+
+    √(sum(sum((coord .- CoM) .^ 2) for coord in chain) / length(chain))
+end
+
 # Returns a symmetric 20x20 matrix with elements uniformly distributed
 # between -4 and -2
 function make_interaction_energy_matrix()

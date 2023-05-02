@@ -97,3 +97,32 @@ function do_mc_sweep!(chain, coord_map, interaction_matrix, monomer_types,
     end
     energy
 end
+
+function simulate_2d(chain, coord_map, interaction_matrix, monomer_types,
+    temperature, n, snapshot_inds=())
+
+    energy = calculate_energy_direct(interaction_matrix, monomer_types,
+        chain, coord_map)
+
+    energies = [energy]
+    e2e_dists = [calculate_end2end_dist(chain)]
+    RoGs = [calculate_RoG(chain)]
+    snapshots = NTuple{2,Int}[]
+
+    for i in 1:n
+        energy = do_mc_sweep!(chain, coord_map, interaction_matrix,
+            monomer_types, energy, temperature)
+        
+        push!(energies, energy)
+        push!(e2e_dists, calculate_end2end_dist(chain))
+        push!(RoGs, calculate_RoG(chain))
+
+        if i ∈ snapshot_inds
+            append!(snapshots, chain)
+        end
+    end
+
+    snapshots = reshape(snapshots, length(chain), length(snapshot_inds))
+
+    energies, e2e_dists, RoGs, snapshots
+end
