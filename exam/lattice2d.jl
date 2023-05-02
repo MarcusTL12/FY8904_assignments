@@ -119,6 +119,27 @@ function calculate_energy_direct(interaction_matrix, monomer_types,
     energy
 end
 
+# Calculate the energy contribution from monomer number i only. This is very
+# useful for calculating the ΔE values during MC moves.
+function get_energy_contrib_i(interaction_matrix, monomer_types,
+    chain, coord_map, i)
+
+    coord = chain[i]
+
+    energy = 0.0
+
+    for dir in ((1, 0), (-1, 0), (0, 1), (0, -1))
+        neighbour_coord = coord .+ dir
+
+        j = get(coord_map, neighbour_coord, 0)
+        if j > 0 && abs(i - j) > 1
+            energy += interaction_matrix[monomer_types[i], monomer_types[j]]
+        end
+    end
+
+    energy
+end
+
 # Returns a symmetric 20x20 matrix with elements uniformly distributed
 # between -4 and -2
 function make_interaction_energy_matrix()

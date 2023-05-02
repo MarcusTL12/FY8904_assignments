@@ -54,8 +54,6 @@ function test_mc2d()
     chain = make_linear_2d_chain(n)
     coord_map = make_coord_map(chain)
 
-    display(plot_chain(chain, monomer_types))
-
     energy = calculate_energy_direct(interaction_matrix, monomer_types,
         chain, coord_map)
 

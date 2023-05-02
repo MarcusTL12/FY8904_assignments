@@ -58,16 +58,19 @@ function do_mc_draw!(chain, coord_map, interaction_matrix, monomer_types,
         # Save this to revert if rejected
         prev_coord = chain[i]
 
+        E1 = get_energy_contrib_i(interaction_matrix, monomer_types, chain,
+            coord_map, i)
+
         # Update the structure
         chain[i] = dest_coord
         delete!(coord_map, prev_coord)
         coord_map[dest_coord] = i
 
-        new_energy = calculate_energy_direct(
-            interaction_matrix, monomer_types, chain, coord_map
-        )
+        E2 = get_energy_contrib_i(interaction_matrix, monomer_types, chain,
+            coord_map, i)
 
-        ΔE = new_energy - prev_energy
+        ΔE = E2 - E1
+        new_energy = prev_energy + ΔE
 
         # Metropolis acceptance probability
         p_accept = min(1.0, exp(-ΔE / temperature))
