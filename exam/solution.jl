@@ -64,9 +64,42 @@ function run_2_1_5()
         snapshot_inds
     )
 
-    Plots.savefig(Plots.plot(energies), joinpath(figure_path, "energy.pdf"))
-    Plots.savefig(Plots.plot(e2e_dists), joinpath(figure_path, "e2e.pdf"))
-    Plots.savefig(Plots.plot(RoGs), joinpath(figure_path, "RoG.pdf"))
+    Plots.savefig(Plots.plot(energies; leg=false),
+        joinpath(figure_path, "energy.pdf"))
+    Plots.savefig(Plots.plot(e2e_dists; leg=false),
+        joinpath(figure_path, "e2e.pdf"))
+    Plots.savefig(Plots.plot(RoGs; leg=false),
+        joinpath(figure_path, "RoG.pdf"))
+
+    for (snap, i) in zip(eachcol(snapshots), snapshot_inds)
+        Plots.savefig(plot_chain(snap), joinpath(figure_path, "snapshot$i.pdf"))
+    end
+end
+
+function run_2_1_6()
+    figure_path = "2.1.6-figures"
+
+    interaction_matrix = make_interaction_energy_matrix()
+
+    n = 15
+    monomer_types = rand(1:20, n)
+
+    chain = make_linear_2d_chain(n)
+    coord_map = make_coord_map(chain)
+
+    snapshot_inds = (100, 1000, 3000)
+
+    energies, e2e_dists, RoGs, snapshots = @time simulate_2d(
+        chain, coord_map, interaction_matrix, monomer_types, 1, 3000,
+        snapshot_inds
+    )
+
+    Plots.savefig(Plots.plot(energies; leg=false),
+        joinpath(figure_path, "energy.pdf"))
+    Plots.savefig(Plots.plot(e2e_dists; leg=false),
+        joinpath(figure_path, "e2e.pdf"))
+    Plots.savefig(Plots.plot(RoGs; leg=false),
+        joinpath(figure_path, "RoG.pdf"))
 
     for (snap, i) in zip(eachcol(snapshots), snapshot_inds)
         Plots.savefig(plot_chain(snap), joinpath(figure_path, "snapshot$i.pdf"))
@@ -82,18 +115,18 @@ end
 function test_mc2d()
     interaction_matrix = make_interaction_energy_matrix()
 
-    n = 100
+    n = 15
     monomer_types = rand(1:20, n)
 
     chain = make_linear_2d_chain(n)
     coord_map = make_coord_map(chain)
 
     energies, e2e_dists, RoGs = @time simulate_2d(
-        chain, coord_map, interaction_matrix, monomer_types, 5, 100000
+        chain, coord_map, interaction_matrix, monomer_types, 1, 10000
     )
 
     display(Plots.plot(energies; title="Energy"))
-    display(Plots.plot(calc_window_avg(energies, 1000); title="Energy avg"))
+    display(Plots.plot(calc_window_avg(energies, 10); title="Energy avg"))
     display(Plots.plot(e2e_dists; title="End to end dist"))
     display(Plots.plot(RoGs; title="Radius of gyration"))
 
