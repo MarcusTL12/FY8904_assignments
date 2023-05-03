@@ -3,10 +3,22 @@ import Plots
 using Printf
 using DSP
 using Statistics
+using Distributed
 
 include("visualization.jl")
 include("lattice2d.jl")
 include("mc2d.jl")
+
+function setup_distributed(n_workers)
+    w = workers()
+    if length(w) < n_workers
+        addprocs(n_workers - length(w))
+        @everywhere include("solution.jl")
+    elseif length(w) > n_workers
+        Δ = length(w) - n_workers
+        rmprocs(w[end-(Δ-1):end])
+    end
+end
 
 # This is run to "solve" task 2.1.3
 # Here we test a few different foldings of a 15 monomer long protein
@@ -112,14 +124,14 @@ function run_2_1_7a()
 
     interaction_matrix = make_interaction_energy_matrix()
 
-    n = 15
+    n = 100
     monomer_types = rand(1:20, n)
 
     chain = make_linear_2d_chain(n)
     coord_map = make_coord_map(chain)
 
     temperatures = [10, 8, 6, 4, 2, 1]
-    sweeps = 1000n
+    sweeps = 100n
     interfaces = [i * sweeps for i in 1:length(temperatures)-1]
 
     energies, e2e_dists, RoGs = simulate_2d(
@@ -141,15 +153,35 @@ function run_2_1_7a()
     Plots.savefig(plot_temperature_interfaces!(
             Plots.plot(x_axis, (@view energies[x_axis]); leg=false),
             interfaces),
-        joinpath(figure_path, "energy.pdf"))
+        joinpath(figure_path, "energy$n.pdf"))
     Plots.savefig(plot_temperature_interfaces!(
             Plots.plot(x_axis, (@view e2e_dists[x_axis]); leg=false),
             interfaces),
-        joinpath(figure_path, "e2e.pdf"))
+        joinpath(figure_path, "e2e$n.pdf"))
     Plots.savefig(plot_temperature_interfaces!(
             Plots.plot(x_axis, (@view RoGs[x_axis]); leg=false),
             interfaces),
-        joinpath(figure_path, "RoG.pdf"))
+        joinpath(figure_path, "RoG$n.pdf"))
+end
+
+function make_data(interaction_matrix, monomer_types, chain, coord_map,
+    temperatures, sweeps_eq, sweeps_mean)
+    energy_t = Float64[]
+    e2e_t = Float64[]
+    RoG_t = Float64[]
+
+    for temperature in temperatures
+        energy_mean, e2e_mean, RoG_mean = simulate_2d_mean(
+            chain, coord_map, interaction_matrix,
+            monomer_types, temperature, sweeps_eq, sweeps_mean
+        )
+
+        push!(energy_t, energy_mean)
+        push!(e2e_t, e2e_mean)
+        push!(RoG_t, RoG_mean)
+    end
+
+    energy_t, e2e_t, RoG_t
 end
 
 function run_2_1_7b()
@@ -157,56 +189,43 @@ function run_2_1_7b()
 
     interaction_matrix = make_interaction_energy_matrix()
 
-    n = 50
+    # n = 15 => eq = 100n, mean = 10_000n
+
+    n = 100
     monomer_types = rand(1:20, n)
 
-    nth = Threads.nthreads()
-    # nth = 1
+    # nth = Threads.nthreads()
+    nth = 48
 
     chains = [make_linear_2d_chain(n) for _ in 1:nth]
     coord_maps = [make_coord_map(chain) for chain in chains]
 
-    temperatures = range(10, 0.1, 100)
-    sweeps = 100n
+    temperatures = range(20, 0.1, 100)
+    sweeps_eq = 1000n
+    sweeps_mean = 2000n
 
-    @time Threads.@threads for i in 1:nth
-        simulate_2d(
-            chains[i], coord_maps[i], interaction_matrix,
-            monomer_types, temperatures[1], 1000
-        )
+    data = @time pmap(zip(chains, coord_maps)) do (chain, coord_map)
+        @inbounds make_data(interaction_matrix, monomer_types,
+            chain, coord_map, temperatures, sweeps_eq, sweeps_mean)
     end
 
-    energy_t = Float64[]
-    e2e_t = Float64[]
-    RoG_t = Float64[]
+    energy_thread = [x for (x, _, _) in data]
+    e2e_thread = [x for (_, x, _) in data]
+    RoG_thread = [x for (_, _, x) in data]
 
-    @time for temperature in temperatures
-        energy_means = zeros(nth)
-        e2e_means = zeros(nth)
-        RoG_means = zeros(nth)
+    energy_t = mean(energy_thread)
+    e2e_t = mean(e2e_thread)
+    RoG_t = mean(RoG_thread)
 
-        Threads.@threads for i in 1:nth
-            energies, e2e_dists, RoGs = simulate_2d(
-                chains[i], coord_maps[i], interaction_matrix,
-                monomer_types, temperature, sweeps
-            )
-
-            energy_means[i] = mean(@view energies[end-sweeps÷2:end])
-            e2e_means[i] = mean(@view e2e_dists[end-sweeps÷2:end])
-            RoG_means[i] = mean(@view RoGs[end-sweeps÷2:end])
-        end
-
-        push!(energy_t, mean(energy_means))
-        push!(e2e_t, mean(energy_means))
-        push!(RoG_t, mean(energy_means))
-    end
-
-    Plots.savefig(Plots.plot(temperatures, energy_t; leg=false),
-        joinpath(figure_path, "energy.pdf"))
-    Plots.savefig(Plots.plot(temperatures, e2e_t; leg=false),
-        joinpath(figure_path, "e2e.pdf"))
-    Plots.savefig(Plots.plot(temperatures, RoG_t; leg=false),
-        joinpath(figure_path, "RoG.pdf"))
+    Plots.savefig(Plots.plot(temperatures, energy_t;
+            leg=false, xlabel="T", ylabel="Energy"),
+        joinpath(figure_path, "energy$n.pdf"))
+    Plots.savefig(Plots.plot(temperatures, e2e_t;
+            leg=false, xlabel="T", ylabel="E2E distance"),
+        joinpath(figure_path, "e2e$n.pdf"))
+    Plots.savefig(Plots.plot(temperatures, RoG_t;
+            leg=false, xlabel="T", ylabel="RoG"),
+        joinpath(figure_path, "RoG$n.pdf"))
 end
 
 function calc_window_avg(xs, n)

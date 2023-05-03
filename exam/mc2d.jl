@@ -126,3 +126,34 @@ function simulate_2d(chain, coord_map, interaction_matrix, monomer_types,
 
     energies, e2e_dists, RoGs, snapshots
 end
+
+function simulate_2d_mean(chain, coord_map, interaction_matrix,
+    monomer_types, temperature, n_eq, n_mean)
+
+    energy = calculate_energy_direct(interaction_matrix, monomer_types,
+        chain, coord_map)
+
+    for _ in 1:n_eq
+        energy = do_mc_sweep!(chain, coord_map, interaction_matrix,
+            monomer_types, energy, temperature)
+    end
+
+    energy_mean = 0.0
+    e2e_mean = 0.0
+    RoG_mean = 0.0
+
+    for _ in 1:n_mean
+        energy = do_mc_sweep!(chain, coord_map, interaction_matrix,
+            monomer_types, energy, temperature)
+
+        energy_mean += energy
+        e2e_mean += calculate_end2end_dist(chain)
+        RoG_mean += calculate_RoG(chain)
+    end
+
+    energy_mean /= n_mean
+    e2e_mean /= n_mean
+    RoG_mean /= n_mean
+
+    energy_mean, e2e_mean, RoG_mean
+end

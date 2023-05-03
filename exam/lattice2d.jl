@@ -157,7 +157,15 @@ end
 function calculate_RoG(chain)
     CoM = calculate_CoM(chain)
 
-    √(sum(sum((coord .- CoM) .^ 2) for coord in chain) / length(chain))
+    r2 = 0.0
+
+    for coord in chain
+        x, y = coord .- CoM
+
+        r2 += x^2 + y^2
+    end
+
+    √(r2 / length(chain))
 end
 
 # Returns a symmetric 20x20 matrix with elements uniformly distributed
