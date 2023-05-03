@@ -1,7 +1,6 @@
 using LinearAlgebra
 import Plots
 using Printf
-using DSP
 using Statistics
 using Distributed
 
@@ -228,10 +227,9 @@ function run_2_1_7b()
         joinpath(figure_path, "RoG$n.pdf"))
 end
 
-function calc_window_avg(xs, n)
-    w = [1 / n for _ in 1:n]
-
-    conv(xs, w)[1:length(xs)]
+function run_2_1_8a()
+    figure_path = "figures/2.1.8/a"
+    
 end
 
 function test_mc2d()
