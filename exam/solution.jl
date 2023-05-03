@@ -273,23 +273,31 @@ function run_2_1_8()
         joinpath(figure_path, "chain_SA.pdf"))
 end
 
-function test_mc2d()
-    interaction_matrix = make_interaction_energy_matrix()
+function run_2_1_9()
+    figure_path = "figures/2.1.9"
 
-    n = 15
-    monomer_types = rand(1:20, n)
+    for p in (0.1, 0.5, 0.9)
+        interaction_matrix = make_repulsive_interaction_energy_matrix(p)
 
-    chain = make_linear_2d_chain(n)
-    coord_map = make_coord_map(chain)
+        Plots.savefig(Plots.heatmap(interaction_matrix[:, end:-1:1]),
+            joinpath(figure_path, "matrix_$p.pdf"))
 
-    energies, e2e_dists, RoGs = @time simulate_2d(
-        chain, coord_map, interaction_matrix, monomer_types, 1, 10000
-    )
+        n = 50
+        monomer_types = rand(1:20, n)
 
-    display(Plots.plot(energies; title="Energy"))
-    display(Plots.plot(calc_window_avg(energies, 10); title="Energy avg"))
-    display(Plots.plot(e2e_dists; title="End to end dist"))
-    display(Plots.plot(RoGs; title="Radius of gyration"))
+        sweeps = 10000n
+        T_start = 10
+        T_end = 0.5
 
-    plot_chain(chain)
+        chain = make_linear_2d_chain(n)
+        coord_map = make_coord_map(chain)
+
+        @time simulate_2d_annealing(
+            chain, coord_map, interaction_matrix, monomer_types,
+            sweeps, T_start, T_end
+        )
+
+        Plots.savefig(plot_chain(chain),
+            joinpath(figure_path, "chain_$p.pdf"))
+    end
 end
