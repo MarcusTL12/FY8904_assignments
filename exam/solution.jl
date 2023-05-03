@@ -160,30 +160,45 @@ function run_2_1_7b()
     n = 50
     monomer_types = rand(1:20, n)
 
-    chain = make_linear_2d_chain(n)
-    coord_map = make_coord_map(chain)
+    nth = Threads.nthreads()
+    # nth = 1
+
+    chains = [make_linear_2d_chain(n) for _ in 1:nth]
+    coord_maps = [make_coord_map(chain) for chain in chains]
 
     temperatures = range(10, 0.1, 100)
-    sweeps = 1000n
+    sweeps = 100n
 
-    energies, e2e_dists, RoGs = @time simulate_2d(
-        chain, coord_map, interaction_matrix, monomer_types, 10, 1000
-    )
+    @time Threads.@threads for i in 1:nth
+        simulate_2d(
+            chains[i], coord_maps[i], interaction_matrix,
+            monomer_types, temperatures[1], 1000
+        )
+    end
 
     energy_t = Float64[]
     e2e_t = Float64[]
     RoG_t = Float64[]
 
     @time for temperature in temperatures
-        energies, e2e_dists, RoGs = simulate_2d(
-            chain, coord_map, interaction_matrix,
-            monomer_types, temperature, sweeps;
-            energies=energies, e2e_dists=e2e_dists, RoGs=RoGs
-        )
+        energy_means = zeros(nth)
+        e2e_means = zeros(nth)
+        RoG_means = zeros(nth)
 
-        push!(energy_t, mean(@view energies[end-sweeps÷2:end]))
-        push!(e2e_t, mean(@view e2e_dists[end-sweeps÷2:end]))
-        push!(RoG_t, mean(@view RoGs[end-sweeps÷2:end]))
+        Threads.@threads for i in 1:nth
+            energies, e2e_dists, RoGs = simulate_2d(
+                chains[i], coord_maps[i], interaction_matrix,
+                monomer_types, temperature, sweeps
+            )
+
+            energy_means[i] = mean(@view energies[end-sweeps÷2:end])
+            e2e_means[i] = mean(@view e2e_dists[end-sweeps÷2:end])
+            RoG_means[i] = mean(@view RoGs[end-sweeps÷2:end])
+        end
+
+        push!(energy_t, mean(energy_means))
+        push!(e2e_t, mean(energy_means))
+        push!(RoG_t, mean(energy_means))
     end
 
     Plots.savefig(Plots.plot(temperatures, energy_t; leg=false),
