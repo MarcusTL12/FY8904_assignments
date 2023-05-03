@@ -20,3 +20,7 @@ function plot_chain(chain)
 
     Plots.plot!()
 end
+
+function plot_temperature_interfaces!(p, sweeps)
+    Plots.vline!(p, sweeps; color=:black)
+end

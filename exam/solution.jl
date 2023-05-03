@@ -2,6 +2,7 @@ using LinearAlgebra
 import Plots
 using Printf
 using DSP
+using Statistics
 
 include("visualization.jl")
 include("lattice2d.jl")
@@ -11,7 +12,7 @@ include("mc2d.jl")
 # Here we test a few different foldings of a 15 monomer long protein
 function run_2_1_3()
     # filepath to save the figures
-    figure_path = "2.1.3-figures"
+    figure_path = "figures/2.1.3"
 
     # Initialize random interaction energies
     interaction_matrix = make_interaction_energy_matrix()
@@ -47,7 +48,7 @@ function run_2_1_3()
 end
 
 function run_2_1_5()
-    figure_path = "2.1.5-figures"
+    figure_path = "figures/2.1.5"
 
     interaction_matrix = make_interaction_energy_matrix()
 
@@ -77,7 +78,7 @@ function run_2_1_5()
 end
 
 function run_2_1_6()
-    figure_path = "2.1.6-figures"
+    figure_path = "figures/2.1.6"
 
     interaction_matrix = make_interaction_energy_matrix()
 
@@ -104,6 +105,93 @@ function run_2_1_6()
     for (snap, i) in zip(eachcol(snapshots), snapshot_inds)
         Plots.savefig(plot_chain(snap), joinpath(figure_path, "snapshot$i.pdf"))
     end
+end
+
+function run_2_1_7a()
+    figure_path = "figures/2.1.7/a"
+
+    interaction_matrix = make_interaction_energy_matrix()
+
+    n = 15
+    monomer_types = rand(1:20, n)
+
+    chain = make_linear_2d_chain(n)
+    coord_map = make_coord_map(chain)
+
+    temperatures = [10, 8, 6, 4, 2, 1]
+    sweeps = 1000n
+    interfaces = [i * sweeps for i in 1:length(temperatures)-1]
+
+    energies, e2e_dists, RoGs = simulate_2d(
+        chain, coord_map, interaction_matrix, monomer_types, 10, 0
+    )
+
+    for temperature in temperatures
+        energies, e2e_dists, RoGs = @time simulate_2d(
+            chain, coord_map, interaction_matrix,
+            monomer_types, temperature, sweeps;
+            energies=energies, e2e_dists=e2e_dists, RoGs=RoGs
+        )
+    end
+
+    max_points = 1000
+    spacing = cld(length(energies), max_points)
+    x_axis = 1:spacing:length(energies)
+
+    Plots.savefig(plot_temperature_interfaces!(
+            Plots.plot(x_axis, (@view energies[x_axis]); leg=false),
+            interfaces),
+        joinpath(figure_path, "energy.pdf"))
+    Plots.savefig(plot_temperature_interfaces!(
+            Plots.plot(x_axis, (@view e2e_dists[x_axis]); leg=false),
+            interfaces),
+        joinpath(figure_path, "e2e.pdf"))
+    Plots.savefig(plot_temperature_interfaces!(
+            Plots.plot(x_axis, (@view RoGs[x_axis]); leg=false),
+            interfaces),
+        joinpath(figure_path, "RoG.pdf"))
+end
+
+function run_2_1_7b()
+    figure_path = "figures/2.1.7/b"
+
+    interaction_matrix = make_interaction_energy_matrix()
+
+    n = 50
+    monomer_types = rand(1:20, n)
+
+    chain = make_linear_2d_chain(n)
+    coord_map = make_coord_map(chain)
+
+    temperatures = range(10, 0.1, 100)
+    sweeps = 1000n
+
+    energies, e2e_dists, RoGs = @time simulate_2d(
+        chain, coord_map, interaction_matrix, monomer_types, 10, 1000
+    )
+
+    energy_t = Float64[]
+    e2e_t = Float64[]
+    RoG_t = Float64[]
+
+    @time for temperature in temperatures
+        energies, e2e_dists, RoGs = simulate_2d(
+            chain, coord_map, interaction_matrix,
+            monomer_types, temperature, sweeps;
+            energies=energies, e2e_dists=e2e_dists, RoGs=RoGs
+        )
+
+        push!(energy_t, mean(@view energies[end-sweeps÷2:end]))
+        push!(e2e_t, mean(@view e2e_dists[end-sweeps÷2:end]))
+        push!(RoG_t, mean(@view RoGs[end-sweeps÷2:end]))
+    end
+
+    Plots.savefig(Plots.plot(temperatures, energy_t; leg=false),
+        joinpath(figure_path, "energy.pdf"))
+    Plots.savefig(Plots.plot(temperatures, e2e_t; leg=false),
+        joinpath(figure_path, "e2e.pdf"))
+    Plots.savefig(Plots.plot(temperatures, RoG_t; leg=false),
+        joinpath(figure_path, "RoG.pdf"))
 end
 
 function calc_window_avg(xs, n)
