@@ -163,27 +163,27 @@ function run_2_1_7a()
         joinpath(figure_path, "RoG$n.pdf"))
 end
 
-function make_data(interaction_matrix, monomer_types, chain, coord_map,
-    temperatures, sweeps_eq, sweeps_mean)
-    energy_t = Float64[]
-    e2e_t = Float64[]
-    RoG_t = Float64[]
+function run_2_1_7b()
+    function make_data(interaction_matrix, monomer_types, chain, coord_map,
+        temperatures, sweeps_eq, sweeps_mean)
+        energy_t = Float64[]
+        e2e_t = Float64[]
+        RoG_t = Float64[]
 
-    for temperature in temperatures
-        energy_mean, e2e_mean, RoG_mean = simulate_2d_mean(
-            chain, coord_map, interaction_matrix,
-            monomer_types, temperature, sweeps_eq, sweeps_mean
-        )
+        for temperature in temperatures
+            energy_mean, e2e_mean, RoG_mean = simulate_2d_mean(
+                chain, coord_map, interaction_matrix,
+                monomer_types, temperature, sweeps_eq, sweeps_mean
+            )
 
-        push!(energy_t, energy_mean)
-        push!(e2e_t, e2e_mean)
-        push!(RoG_t, RoG_mean)
+            push!(energy_t, energy_mean)
+            push!(e2e_t, e2e_mean)
+            push!(RoG_t, RoG_mean)
+        end
+
+        energy_t, e2e_t, RoG_t
     end
 
-    energy_t, e2e_t, RoG_t
-end
-
-function run_2_1_7b()
     figure_path = "figures/2.1.7/b"
 
     interaction_matrix = make_interaction_energy_matrix()
@@ -194,14 +194,14 @@ function run_2_1_7b()
     monomer_types = rand(1:20, n)
 
     # nth = Threads.nthreads()
-    nth = 48
+    nth = 88
 
     chains = [make_linear_2d_chain(n) for _ in 1:nth]
     coord_maps = [make_coord_map(chain) for chain in chains]
 
     temperatures = range(20, 0.1, 100)
     sweeps_eq = 1000n
-    sweeps_mean = 2000n
+    sweeps_mean = 4000n
 
     data = @time pmap(zip(chains, coord_maps)) do (chain, coord_map)
         @inbounds make_data(interaction_matrix, monomer_types,
@@ -229,7 +229,28 @@ end
 
 function run_2_1_8a()
     figure_path = "figures/2.1.8/a"
-    
+
+    interaction_matrix = make_interaction_energy_matrix()
+
+    n = 30
+    monomer_types = rand(1:20, n)
+
+    chain = make_linear_2d_chain(n)
+    coord_map = make_coord_map(chain)
+
+    energies, e2e_dists, RoGs, snapshots = @time simulate_2d(
+        chain, coord_map, interaction_matrix, monomer_types, 1, 3000,
+        snapshot_inds
+    )
+
+    Plots.savefig(Plots.plot(energies; leg=false),
+        joinpath(figure_path, "energy.pdf"))
+    Plots.savefig(Plots.plot(e2e_dists; leg=false),
+        joinpath(figure_path, "e2e.pdf"))
+    Plots.savefig(Plots.plot(RoGs; leg=false),
+        joinpath(figure_path, "RoG.pdf"))
+
+    plot_chain(chain)
 end
 
 function test_mc2d()
