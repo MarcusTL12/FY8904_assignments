@@ -17,8 +17,6 @@ function plot_chain(chain)
 
     Plots.plot(xs, ys; leg=false, ratio=1.0)
     Plots.scatter!(xs, ys)
-
-    Plots.plot!()
 end
 
 function plot_temperature_interfaces!(p, sweeps)

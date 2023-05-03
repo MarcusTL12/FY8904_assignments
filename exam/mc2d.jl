@@ -157,3 +157,23 @@ function simulate_2d_mean(chain, coord_map, interaction_matrix,
 
     energy_mean, e2e_mean, RoG_mean
 end
+
+function simulate_2d_annealing(chain, coord_map, interaction_matrix,
+    monomer_types, n, T_start, T_end, log_interval)
+
+    energy = calculate_energy_direct(interaction_matrix, monomer_types,
+        chain, coord_map)
+
+    energies = [energy]
+
+    for (i, temperature) in enumerate(range(T_start, T_end, n))
+        energy = do_mc_sweep!(chain, coord_map, interaction_matrix,
+            monomer_types, energy, temperature)
+
+        if i % log_interval == 0
+            push!(energies, energy)
+        end
+    end
+
+    energies
+end

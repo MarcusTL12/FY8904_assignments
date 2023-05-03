@@ -190,7 +190,7 @@ function run_2_1_7b()
 
     # n = 15 => eq = 100n, mean = 10_000n
 
-    n = 100
+    n = 50
     monomer_types = rand(1:20, n)
 
     # nth = Threads.nthreads()
@@ -227,30 +227,50 @@ function run_2_1_7b()
         joinpath(figure_path, "RoG$n.pdf"))
 end
 
-function run_2_1_8a()
-    figure_path = "figures/2.1.8/a"
+function run_2_1_8()
+    figure_path = "figures/2.1.8"
 
     interaction_matrix = make_interaction_energy_matrix()
 
     n = 30
     monomer_types = rand(1:20, n)
 
+    sweeps = 1000n
+    log_interval = sweeps ÷ 1000
+    T_start = 10
+    T_end = 0.5
+
+    x_axis = 0:log_interval:sweeps
+
+    for i in 1:2
+        chain = make_linear_2d_chain(n)
+        coord_map = make_coord_map(chain)
+
+        energies = @time simulate_2d_annealing(
+            chain, coord_map, interaction_matrix, monomer_types,
+            sweeps, 1, 1, log_interval
+        )
+
+        Plots.savefig(Plots.plot(x_axis, energies; leg=false),
+            joinpath(figure_path, "energy_$i.pdf"))
+
+        Plots.savefig(plot_chain(chain),
+            joinpath(figure_path, "chain_$i.pdf"))
+    end
+
     chain = make_linear_2d_chain(n)
     coord_map = make_coord_map(chain)
 
-    energies, e2e_dists, RoGs, snapshots = @time simulate_2d(
-        chain, coord_map, interaction_matrix, monomer_types, 1, 3000,
-        snapshot_inds
+    energies = @time simulate_2d_annealing(
+        chain, coord_map, interaction_matrix, monomer_types,
+        sweeps, T_start, T_end, log_interval
     )
 
-    Plots.savefig(Plots.plot(energies; leg=false),
-        joinpath(figure_path, "energy.pdf"))
-    Plots.savefig(Plots.plot(e2e_dists; leg=false),
-        joinpath(figure_path, "e2e.pdf"))
-    Plots.savefig(Plots.plot(RoGs; leg=false),
-        joinpath(figure_path, "RoG.pdf"))
+    Plots.savefig(Plots.plot(x_axis, energies; leg=false),
+        joinpath(figure_path, "energy_SA.pdf"))
 
-    plot_chain(chain)
+    Plots.savefig(plot_chain(chain),
+        joinpath(figure_path, "chain_SA.pdf"))
 end
 
 function test_mc2d()
