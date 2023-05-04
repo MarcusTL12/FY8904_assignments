@@ -32,7 +32,7 @@ function run_2_1_3()
     # fully unfolded, just along different axes. w = 5 or 3 are special as the
     # 15 length polymer fits in a perfect 3x5 or 5x3 rectangle, which maximizes
     # the number of interactions.
-    for w in (10, 7, 5, 3, 2, 1)
+    for w in (1, 2, 3, 5, 7, 10)
         chain = make_folded_2d_chain(n, w)
         coord_map = make_coord_map(chain)
         energy = calculate_energy_direct(interaction_matrix, monomer_types,
