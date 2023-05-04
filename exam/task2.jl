@@ -2,14 +2,14 @@
 function test_3d()
     interaction_matrix = make_interaction_energy_matrix()
 
-    n = 30
+    n = 100
     monomer_types = rand(1:20, n)
 
     chain = make_linear_3d_chain(n)
     coord_map = make_coord_map(chain)
 
     @time simulate_annealing(chain, coord_map, interaction_matrix,
-        monomer_types, 1000n, 10, 1)
+        monomer_types, 10000n, 10, 1)
 
     plot_chain(chain)
 end

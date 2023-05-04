@@ -1,16 +1,16 @@
 # 3d versions of utility functions to rotate a vector 90 degrees around an axis
-rot3d((x, y, z),) = (
-    (x, -z, y),
-    (x, z, -y),
-    (-z, y, x),
-    (z, y, -x),
-    (-y, x, z),
-    (y, -x, z),
+rot3d(r, (x, y, z),) = (
+    r .+ (x, -z, y),
+    r .+ (x, z, -y),
+    r .+ (-z, y, x),
+    r .+ (z, y, -x),
+    r .+ (-y, x, z),
+    r .+ (y, -x, z),
 )
 
 # This function will check if moving monomer number i is possible, and return
 # the destination coordinate if it is.
-function is_transition_possible(chain::AbstractArray{NTuple{3,Int}},
+function is_transition_possible(chain::Vector{NTuple{3,Int}},
     coord_map, i)
     if i == 1 || i == length(chain)
         m1, m2 = if i == 1
@@ -19,7 +19,7 @@ function is_transition_possible(chain::AbstractArray{NTuple{3,Int}},
             chain[end], chain[end-1]
         end
 
-        dests = ((m2 .+ r for r in rot3d(m1 .- m2))...,)
+        dests = @inline rot3d(m2, m1 .- m2)
 
         possible = ((!haskey(coord_map, dest) for dest in dests)...,)
 
