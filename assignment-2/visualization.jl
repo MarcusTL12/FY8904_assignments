@@ -23,7 +23,7 @@ function animate_spin_history(lattice_points, spin_history)
 end
 
 function visualize_spin_history_interactive(lattice_points, spin_history)
-    f = Figure(resolution=(1000, 1100))
+    f = Figure(resolution=(1500, 900))
     ax = Axis3(f[1, 1], viewmode=:fitzoom, aspect=:data, perspectiveness=0.5)
 
     xmin, xmax = extrema(@view lattice_points[:, 1])

@@ -210,7 +210,7 @@ function test_3d_box(nx, ny, nz)
         10.0, 3.0, 0.0, (@SVector [0.0, 0.0, 3.0]), 1.0, 0.01
     )
 
-    S_hist = @time simulate!(state, params, 1000, 1)
+    S_hist = @time simulate!(state, params, 1000, 10)
 
     @time visualize_spin_history_interactive(lattice_points, S_hist)
 end
@@ -465,8 +465,8 @@ function make_phase_diagram(n)
     f, ax, _ = band(T_range, M_means - M_stdds, M_means + M_stdds)
     lines!(ax, T_range, M_means)
 
-    xlabel!(ax, "kT")
-    ylabel!(ax, "M(kT)")
+    ax.xlabel[] = "kT"
+    ax.ylabel[] = "M(kT)"
 
     f
 end
