@@ -99,13 +99,13 @@ function do_mc_sweep!(chain, coord_map, interaction_matrix, monomer_types,
     energy
 end
 
-function simulate_2d(chain, coord_map, interaction_matrix, monomer_types,
+function simulate(chain, coord_map, interaction_matrix, monomer_types,
     temperature, n, snapshot_inds=();
     energies=[calculate_energy_direct(interaction_matrix, monomer_types,
         chain, coord_map)],
     e2e_dists=[calculate_end2end_dist(chain)],
     RoGs=[calculate_RoG(chain)],
-    snapshots=NTuple{2,Int}[]
+    snapshots=eltype(chain)[]
 )
 
     energy = energies[end]
@@ -128,7 +128,7 @@ function simulate_2d(chain, coord_map, interaction_matrix, monomer_types,
     energies, e2e_dists, RoGs, snapshots
 end
 
-function simulate_2d_mean(chain, coord_map, interaction_matrix,
+function simulate_mean(chain, coord_map, interaction_matrix,
     monomer_types, temperature, n_eq, n_mean)
 
     energy = calculate_energy_direct(interaction_matrix, monomer_types,
@@ -159,7 +159,7 @@ function simulate_2d_mean(chain, coord_map, interaction_matrix,
     energy_mean, e2e_mean, RoG_mean
 end
 
-function simulate_2d_annealing(chain, coord_map, interaction_matrix,
+function simulate_annealing(chain, coord_map, interaction_matrix,
     monomer_types, n, T_start, T_end, log_interval=0)
 
     energy = calculate_energy_direct(interaction_matrix, monomer_types,

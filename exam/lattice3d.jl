@@ -2,7 +2,7 @@
 # and reaching towards positive x
 # Calling this for n = 4 will return the list
 # [(0, 0, 0), (1, 0, 0), (2, 0, 0), (3, 0, 0)]
-function make_linear_2d_chain(n)
+function make_linear_3d_chain(n)
     [(i, 0, 0) for i in 0:(n-1)]
 end
 

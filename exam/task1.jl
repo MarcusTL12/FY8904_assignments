@@ -61,7 +61,7 @@ function run_2_1_5()
 
     snapshot_inds = (1, 10, 100)
 
-    energies, e2e_dists, RoGs, snapshots = @time simulate_2d(
+    energies, e2e_dists, RoGs, snapshots = @time simulate(
         chain, coord_map, interaction_matrix, monomer_types, 10, 100,
         snapshot_inds
     )
@@ -91,7 +91,7 @@ function run_2_1_6()
 
     snapshot_inds = (100, 1000, 3000)
 
-    energies, e2e_dists, RoGs, snapshots = @time simulate_2d(
+    energies, e2e_dists, RoGs, snapshots = @time simulate(
         chain, coord_map, interaction_matrix, monomer_types, 1, 3000,
         snapshot_inds
     )
@@ -123,12 +123,12 @@ function run_2_1_7a()
     sweeps = 100n
     interfaces = [i * sweeps for i in 1:length(temperatures)-1]
 
-    energies, e2e_dists, RoGs = simulate_2d(
+    energies, e2e_dists, RoGs = simulate(
         chain, coord_map, interaction_matrix, monomer_types, 10, 0
     )
 
     for temperature in temperatures
-        energies, e2e_dists, RoGs = @time simulate_2d(
+        energies, e2e_dists, RoGs = @time simulate(
             chain, coord_map, interaction_matrix,
             monomer_types, temperature, sweeps;
             energies=energies, e2e_dists=e2e_dists, RoGs=RoGs
@@ -161,7 +161,7 @@ function run_2_1_7b()
         RoG_t = Float64[]
 
         for temperature in temperatures
-            energy_mean, e2e_mean, RoG_mean = simulate_2d_mean(
+            energy_mean, e2e_mean, RoG_mean = simulate_mean(
                 chain, coord_map, interaction_matrix,
                 monomer_types, temperature, sweeps_eq, sweeps_mean
             )
@@ -236,7 +236,7 @@ function run_2_1_8()
         chain = make_linear_2d_chain(n)
         coord_map = make_coord_map(chain)
 
-        energies = @time simulate_2d_annealing(
+        energies = @time simulate_annealing(
             chain, coord_map, interaction_matrix, monomer_types,
             sweeps, 1, 1, log_interval
         )
@@ -251,7 +251,7 @@ function run_2_1_8()
     chain = make_linear_2d_chain(n)
     coord_map = make_coord_map(chain)
 
-    energies = @time simulate_2d_annealing(
+    energies = @time simulate_annealing(
         chain, coord_map, interaction_matrix, monomer_types,
         sweeps, T_start, T_end, log_interval
     )
@@ -282,7 +282,7 @@ function run_2_1_9()
         chain = make_linear_2d_chain(n)
         coord_map = make_coord_map(chain)
 
-        @time simulate_2d_annealing(
+        @time simulate_annealing(
             chain, coord_map, interaction_matrix, monomer_types,
             sweeps, T_start, T_end
         )

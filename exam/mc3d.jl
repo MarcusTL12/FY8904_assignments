@@ -34,10 +34,11 @@ function is_transition_possible(chain::AbstractArray{NTuple{3,Int}},
                 i += b
                 if i == choice
                     choice_dest = dest
+                    break
                 end
             end
 
-            return (true, dest)
+            return (true, choice_dest)
         end
     else
         # Short hand to not have to write out 'chain[...]' too many times
