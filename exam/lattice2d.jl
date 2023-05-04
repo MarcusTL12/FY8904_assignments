@@ -44,6 +44,9 @@ end
 # This translates the chain into a dictionary (Hashmap) from integer coordinates
 # to the index in the chain. This makes for a both space and time efficient
 # lookup table for whether a given coordinate is occupied, and by which one.
+#
+# This function is written very generally and will work for making a Dict
+# from elements to indices for any array, most notably also for 3d coordinates
 function make_coord_map(chain)
     Dict(coord => i for (i, coord) in enumerate(chain))
 end
@@ -91,8 +94,11 @@ end
 # The code here is almost identical to the make_neighbour_list! function
 # now just adding to the total energy instead of adding elements to the
 # neighbour_list.
+#
+# The explicit type for the chain parameter is to avoid function name
+# collisions with the 3d version
 function calculate_energy_direct(interaction_matrix, monomer_types,
-    chain, coord_map)
+    chain::AbstractArray{NTuple{2,Int}}, coord_map)
 
     energy = 0.0
 
@@ -122,7 +128,7 @@ end
 # Calculate the energy contribution from monomer number i only. This is very
 # useful for calculating the ΔE values during MC moves.
 function get_energy_contrib_i(interaction_matrix, monomer_types,
-    chain, coord_map, i)
+    chain::AbstractArray{NTuple{2,Int}}, coord_map, i)
 
     coord = chain[i]
 
@@ -140,12 +146,18 @@ function get_energy_contrib_i(interaction_matrix, monomer_types,
     energy
 end
 
+# Function to calculate the euclidian end to end distance of a chain.
+# Written generically enough to work for any number of dimensions.
 function calculate_end2end_dist(chain)
     hypot((chain[1] .- chain[end])...)
 end
 
+# Calculates the center of "mass" of a chain assuming all amino acids weigh the
+# same. This is exlusively used for calculating the radius of gyration.
 function calculate_CoM(chain)
-    CoM = (0.0, 0.0)
+    # Initializing the (0.0, 0.0) tuple like this makes the function generic
+    # enough to work for 3d as well
+    CoM = chain[1] .* 0.0
 
     for coord in chain
         CoM = CoM .+ coord
@@ -154,15 +166,18 @@ function calculate_CoM(chain)
     CoM ./ length(chain)
 end
 
+# This calculates the radius of gyration of a chain
+# The code is written generally enough to work for 3d,
+# however in 3d it does not calculate the "classical" RoG, but the IUPAC version
+# of the RoG for polymers. This is quite fitting for the purpose, but it is
+# purely coincidence.
 function calculate_RoG(chain)
     CoM = calculate_CoM(chain)
 
     r2 = 0.0
 
-    for coord in chain
-        x, y = coord .- CoM
-
-        r2 += x^2 + y^2
+    for coord in chain, q in coord .- CoM
+        r2 += q^2
     end
 
     √(r2 / length(chain))

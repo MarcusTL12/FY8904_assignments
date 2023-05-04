@@ -5,7 +5,8 @@ rotr((x, y),) = (y, -x)
 
 # This function will check if moving monomer number i is possible, and return
 # the destination coordinate if it is.
-function is_transition_possible(chain, coord_map, i)
+function is_transition_possible(chain::AbstractArray{NTuple{2,Int}},
+    coord_map, i)
     if i == 1 || i == length(chain)
         dest1, dest2 = if i == 1
             chain[2] .+ rotl(chain[1] .- chain[2]),
