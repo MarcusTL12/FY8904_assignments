@@ -183,7 +183,7 @@ function run_2_1_7b()
 
     interaction_matrix = make_interaction_energy_matrix()
 
-    # n = 15  => init = 10_000n, eq = 100n, mean = 10_000n
+    # n = 15  => init = 10_000n,  eq = 100n,  mean = 10_000n
     # n = 50  => init = 100_000n, eq = 1000n, mean = 100_000n
     # n = 100 => init = 100_000n, eq = 1000n, mean = 100_000n
 
