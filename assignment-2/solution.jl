@@ -210,7 +210,7 @@ function test_3d_box(nx, ny, nz)
         10.0, 3.0, 0.0, (@SVector [0.0, 0.0, 3.0]), 1.0, 0.01
     )
 
-    S_hist = @time simulate!(state, params, 1000, 10)
+    S_hist = @time simulate!(state, params, 5000, 10)
 
     @time visualize_spin_history_interactive(lattice_points, S_hist)
 end
@@ -322,46 +322,61 @@ function test_1d_dispersion(n, gain=1.0, cutoff=0.0)
     f
 end
 
-function test_1d_dispersion_antiferromagnet(n)
+function test_1d_dispersion_antiferromagnet(n, gain=1.0, cutoff=0.0)
     S = zeros(n, 1, 1, 3)
 
-    S[1:2:end, :, :, 3] .= 1.0
-    S[2:2:end, :, :, 3] .= -1.0
-
-    # normalize_spin!(S)
-
-    # lattice_points = zeros(n, 3)
-
-    # for x in 1:n
-    #     lattice_points[x, 1] = Float64(x)
-    #     lattice_points[x, 2] = 0.0
-    #     lattice_points[x, 3] = 0.0
-    # end
+    S[:, :, :, 3] .= 1.0
 
     state = init_state(S)
-    J = -30.0
-    dz = 6.0
+    J = -10.0
+    dz = 3.0
+    Δt = 0.3
     params = setup_params(
-        J, dz, 0.01, (@SVector [0.0, 0.0, 0.05J]), 1.0, 0.1
+        J, dz, 0.1, (@SVector [0.0, 0.0, 0.0]), Δt, 0.1
     )
 
-    n_steps = 30_000
+    n_steps = ceil(Int, 30n / Δt)
     S_hist = @time simulate!(state, params, n_steps, 1)
 
     Sx = @view S_hist[:, 1, :]
 
     # h/2 = 2067.811956368851 meV * fs
-    f_analytic(k) = (2dz + 2J * (1 - cos(2π * k))) / 2067.811956368851
+    f_analytic(k) = (2dz + 2J * (1 - cos(2π * k))) / 2.067811956368851
 
-    Sx_fft = @time fftshift(fft(Sx))
+    Sx_fft = @time fftshift(rfft(Sx')', 1)
     k_fft = fftshift(fftfreq(n))
-    f_fft = fftshift(fftfreq(n_steps + 1), 1)
+    f_fft = rfftfreq(n_steps + 1, 1000 / Δt)
 
-    f, ax, _ = heatmap(k_fft, f_fft, norm.(Sx_fft))
-    # plot!(ax, k_fft, f_analytic)
+    max_f = 1.5 * abs(J)
+
+    f_ind_range = filter(i -> abs(f_fft[i]) < max_f * 1.5, eachindex(f_fft))
+    f_fft = @view f_fft[f_ind_range]
+    Sx_fft = @view Sx_fft[:, f_ind_range]
+
+    max_amp = maximum(norm, Sx_fft)
+
+    gain = Observable(gain)
+    cutoff = Observable(cutoff)
+
+    f, ax, _ = heatmap(k_fft, f_fft, norm.(Sx_fft);
+        colorrange=(@lift (max_amp * $cutoff, max_amp / $gain)))
+    # lines!(ax, k_fft, f_analytic; color=:red)
+
+    limits!(ax, -maximum(k_fft), maximum(k_fft), 0, max_f * 1.1)
 
     ax.xlabel[] = "k"
-    ax.ylabel[] = "f"
+    ax.ylabel[] = "f [1/ps]"
+
+    sl_gain = Slider(f[1, 2], range=range(0, 4, 1000), horizontal=false)
+    sl_cutoff = Slider(f[1, 3], range=range(0.0, 0.1, 1000), horizontal=false)
+
+    lift(sl_gain.value) do g
+        gain[] = 10^g
+    end
+
+    lift(sl_cutoff.value) do c
+        cutoff[] = c
+    end
 
     f
 end

@@ -32,7 +32,7 @@ function run_2_1_3()
     # fully unfolded, just along different axes. w = 5 or 3 are special as the
     # 15 length polymer fits in a perfect 3x5 or 5x3 rectangle, which maximizes
     # the number of interactions.
-    for w in (10, 7, 5, 3, 2, 1)
+    for w in (1, 2, 3, 5, 7, 10)
         chain = make_folded_2d_chain(n, w)
         coord_map = make_coord_map(chain)
         energy = calculate_energy_direct(interaction_matrix, monomer_types,
@@ -113,13 +113,13 @@ function run_2_1_7a()
 
     interaction_matrix = make_interaction_energy_matrix()
 
-    n = 100
+    n = 50
     monomer_types = rand(1:20, n)
 
     chain = make_linear_2d_chain(n)
     coord_map = make_coord_map(chain)
 
-    temperatures = [10, 8, 6, 4, 2, 1]
+    temperatures = [10, 7, 3, 1]
     sweeps = 100n
     interfaces = [i * sweeps for i in 1:length(temperatures)-1]
 
@@ -155,10 +155,15 @@ end
 
 function run_2_1_7b()
     function make_data(interaction_matrix, monomer_types, chain, coord_map,
-        temperatures, sweeps_eq, sweeps_mean)
+        temperatures, sweeps_eq, sweeps_mean, sweeps_init)
         energy_t = Float64[]
         e2e_t = Float64[]
         RoG_t = Float64[]
+
+        simulate_mean(
+            chain, coord_map, interaction_matrix,
+            monomer_types, temperatures[1], sweeps_init, 0
+        )
 
         for temperature in temperatures
             energy_mean, e2e_mean, RoG_mean = simulate_mean(
@@ -178,9 +183,11 @@ function run_2_1_7b()
 
     interaction_matrix = make_interaction_energy_matrix()
 
-    # n = 15 => eq = 100n, mean = 10_000n
+    # n = 15  => init = 10_000n,  eq = 100n,  mean = 10_000n
+    # n = 50  => init = 100_000n, eq = 1000n, mean = 100_000n
+    # n = 100 => init = 100_000n, eq = 1000n, mean = 100_000n
 
-    n = 50
+    n = 100
     monomer_types = rand(1:20, n)
 
     # nth = Threads.nthreads()
@@ -190,12 +197,13 @@ function run_2_1_7b()
     coord_maps = [make_coord_map(chain) for chain in chains]
 
     temperatures = range(20, 0.1, 100)
-    sweeps_eq = 2000n
-    sweeps_mean = 100000n
+    sweeps_eq = 1000n
+    sweeps_mean = 100_000n
+    sweeps_init = 100_000n
 
     data = @time pmap(zip(chains, coord_maps)) do (chain, coord_map)
         @inbounds make_data(interaction_matrix, monomer_types,
-            chain, coord_map, temperatures, sweeps_eq, sweeps_mean)
+            chain, coord_map, temperatures, sweeps_eq, sweeps_mean, sweeps_init)
     end
 
     energy_thread = [x for (x, _, _) in data]

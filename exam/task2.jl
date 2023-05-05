@@ -2,14 +2,14 @@
 function test_3d()
     interaction_matrix = make_interaction_energy_matrix()
 
-    n = 100
+    n = 200
     monomer_types = rand(1:20, n)
 
     chain = make_linear_3d_chain(n)
     coord_map = make_coord_map(chain)
 
     @time simulate_annealing(chain, coord_map, interaction_matrix,
-        monomer_types, 10000n, 10, 1)
+        monomer_types, 100000n, 10, 0.5)
 
     plot_chain(chain)
 end
@@ -42,10 +42,15 @@ end
 
 function run_2_2_3()
     function make_data(interaction_matrix, monomer_types, chain, coord_map,
-        temperatures, sweeps_eq, sweeps_mean)
+        temperatures, sweeps_eq, sweeps_mean, sweeps_init)
         energy_t = Float64[]
         e2e_t = Float64[]
         RoG_t = Float64[]
+
+        simulate_mean(
+            chain, coord_map, interaction_matrix,
+            monomer_types, temperatures[1], sweeps_init, 0
+        )
 
         for temperature in temperatures
             energy_mean, e2e_mean, RoG_mean = simulate_mean(
@@ -65,9 +70,11 @@ function run_2_2_3()
 
     interaction_matrix = make_interaction_energy_matrix()
 
-    # n = 15 => eq = 100n, mean = 10_000n
+    # n = 15  => init = 10_000n, eq = 100n, mean = 10_000n
+    # n = 50  => inti = 10_000n, eq = 100n, mean = 10_000n
+    # n = 100 => init = 10_000n, eq = 100n, mean = 10_000n
 
-    n = 15
+    n = 100
     monomer_types = rand(1:20, n)
 
     # nth = Threads.nthreads()
@@ -79,10 +86,11 @@ function run_2_2_3()
     temperatures = range(20, 0.1, 100)
     sweeps_eq = 100n
     sweeps_mean = 10_000n
+    sweeps_init = 10_000n
 
     data = @time pmap(zip(chains, coord_maps)) do (chain, coord_map)
         @inbounds make_data(interaction_matrix, monomer_types,
-            chain, coord_map, temperatures, sweeps_eq, sweeps_mean)
+            chain, coord_map, temperatures, sweeps_eq, sweeps_mean, sweeps_init)
     end
 
     energy_thread = [x for (x, _, _) in data]
