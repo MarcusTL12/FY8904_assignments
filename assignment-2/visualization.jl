@@ -105,6 +105,15 @@ function visualize_spin_history_interactive(lattice_points, spin_history)
         end
     end
 
+    rec_btn = Button(f[2, 1][1, 4]; label="●")
+
+    on(rec_btn.clicks) do _
+        @async record(f, "tmp.mp4", axes(spin_history, 3), framerate=60) do i
+            frame_n[] = i
+            set_close_to!(sl, frame_n[])
+        end
+    end
+
     f
 end
 
