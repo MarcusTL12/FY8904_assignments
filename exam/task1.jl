@@ -113,13 +113,13 @@ function run_2_1_7a()
 
     interaction_matrix = make_interaction_energy_matrix()
 
-    n = 100
+    n = 50
     monomer_types = rand(1:20, n)
 
     chain = make_linear_2d_chain(n)
     coord_map = make_coord_map(chain)
 
-    temperatures = [10, 8, 6, 4, 2, 1]
+    temperatures = [10, 7, 3, 1]
     sweeps = 100n
     interfaces = [i * sweeps for i in 1:length(temperatures)-1]
 
