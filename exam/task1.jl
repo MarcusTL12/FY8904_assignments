@@ -1,13 +1,3 @@
-function setup_distributed(n_workers)
-    w = workers()
-    if length(w) < n_workers
-        addprocs(n_workers - length(w))
-        @everywhere include("solution.jl")
-    elseif length(w) > n_workers
-        Δ = length(w) - n_workers
-        rmprocs(w[end-(Δ-1):end])
-    end
-end
 
 # This is run to "solve" task 2.1.3
 # Here we test a few different foldings of a 15 monomer long protein
@@ -154,12 +144,14 @@ function run_2_1_7a()
 end
 
 function run_2_1_7b()
+    # A specific function that is to be called on the different threads
     function make_data(interaction_matrix, monomer_types, chain, coord_map,
         temperatures, sweeps_eq, sweeps_mean, sweeps_init)
         energy_t = Float64[]
         e2e_t = Float64[]
         RoG_t = Float64[]
 
+        # This is to initially equilibrate the system at the highest temperature
         simulate_mean(
             chain, coord_map, interaction_matrix,
             monomer_types, temperatures[1], sweeps_init, 0

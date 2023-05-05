@@ -12,6 +12,9 @@ include("mc3d.jl")
 include("task1.jl")
 include("task2.jl")
 
+# This function initializes the Distributed.jl package with the number of
+# workers requested. If this is not run, the phase diagrams will run single
+# threaded, which can take a while.
 function setup_distributed(n_workers)
     w = workers()
     if w == [1]

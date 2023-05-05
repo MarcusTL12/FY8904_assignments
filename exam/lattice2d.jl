@@ -189,6 +189,8 @@ function make_interaction_energy_matrix()
     Symmetric([rand() * 2 - 4 for _ in 1:20, _ in 1:20])
 end
 
+# This works like the one above but takes in the probability for the elements to
+# flip sign.
 function make_repulsive_interaction_energy_matrix(prob)
     Symmetric([(rand() * 2 - 4) * ((rand() > prob) * 2 - 1)
                for _ in 1:20, _ in 1:20])

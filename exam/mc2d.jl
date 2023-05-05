@@ -70,6 +70,8 @@ function do_mc_draw!(chain, coord_map, interaction_matrix, monomer_types,
         E2 = get_energy_contrib_i(interaction_matrix, monomer_types, chain,
             coord_map, i)
 
+        # Calculate the ΔE directly from the energy contribution of the
+        # monomer that is being moved.
         ΔE = E2 - E1
         new_energy = prev_energy + ΔE
 
@@ -100,6 +102,15 @@ function do_mc_sweep!(chain, coord_map, interaction_matrix, monomer_types,
     energy
 end
 
+# The various simulate functions below are just variations on doing a bunch
+# of sweeps and differ by what information is saved
+
+# This simulate function runs n sweeps for the given chain at the given
+# temperature, then returns the energy, e2e and RoG histories, as well as
+# the chain at the requested snapshots.
+#
+# When calling this function the eneriegs, e2e and RoGs can be passed in
+# so that this function appends the data instead of creating new lists.
 function simulate(chain, coord_map, interaction_matrix, monomer_types,
     temperature, n, snapshot_inds=();
     energies=[calculate_energy_direct(interaction_matrix, monomer_types,
@@ -129,6 +140,10 @@ function simulate(chain, coord_map, interaction_matrix, monomer_types,
     energies, e2e_dists, RoGs, snapshots
 end
 
+# This function only keeps track of the mean data instead of the whole history.
+# It first performs n_eq sweeps to equilibrate, and then n_mean sweeps that are
+# averaged over.
+# This is used to calculate the time averaged points for the phase diagrams.
 function simulate_mean(chain, coord_map, interaction_matrix,
     monomer_types, temperature, n_eq, n_mean)
 
@@ -160,6 +175,8 @@ function simulate_mean(chain, coord_map, interaction_matrix,
     energy_mean, e2e_mean, RoG_mean
 end
 
+# This anneals the chain from T_start to T_end with n total sweeps.
+# if the log_interval is specified the energy history is recorded and returned
 function simulate_annealing(chain, coord_map, interaction_matrix,
     monomer_types, n, T_start, T_end, log_interval=0)
 
