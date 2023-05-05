@@ -18,9 +18,10 @@ end
 function calculate_ljp_energy(interaction_matrix, monomer_types, chain)
     energy = 0.0
 
-    @inbounds for (i, coord_i) in enumerate(chain), j in i+1:length(chain)
+    # Looping over all monomer pairs that are not covalently bonded
+    @inbounds for (i, coord_i) in enumerate(chain), j in i+2:length(chain)
         energy += lennard_jones(coord_i, chain[j],
-            interaction_matrix[monomer_types[i], monomer_types[j]])
+            -interaction_matrix[monomer_types[i], monomer_types[j]])
     end
 
     energy
@@ -31,13 +32,20 @@ function get_ljp_energy_contrib_i(interaction_matrix, monomer_types, chain, i)
 
     coord_i = @inbounds chain[i]
 
+    # Looping over all monomers, but only add LJP energy for those not
+    # covalently bonded
     @inbounds for (j, coord_j) in enumerate(chain)
-        energy += lennard_jones(coord_i, coord_j,
-            interaction_matrix[monomer_types[i], monomer_types[j]])
+        if abs(i - j) > 1
+            energy += lennard_jones(coord_i, coord_j,
+                -interaction_matrix[monomer_types[i], monomer_types[j]])
+        end
     end
 
     energy
 end
+
+# The functions below are identical to the ones in mc2d.jl but using the
+# _ljp versions of all the functions
 
 function do_mc_ljp_draw!(chain, coord_map, interaction_matrix, monomer_types,
     prev_energy, temperature)
