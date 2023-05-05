@@ -10,9 +10,9 @@ using Images
 using FFMPEG
 using Random
 using StaticArrays
-# using GLMakie
-# GLMakie.activate!(title="Assignment-2", framerate=60.0)
-using CairoMakie
+using GLMakie
+GLMakie.activate!(title="Assignment-2", framerate=60.0)
+# using CairoMakie
 
 include("hamiltonian.jl")
 include("simulation.jl")
@@ -273,7 +273,7 @@ function test_1d_dispersion(n, gain=1.0, cutoff=0.0)
     dz = 3.0
     Δt = 0.3
     params = setup_params(
-        J, dz, 0.1, (@SVector [0.0, 0.0, 0.0]), Δt, 0.1
+        J, dz, 0.1, (@SVector [0.0, 0.0, -5.0]), Δt, 0.1
     )
 
     n_steps = ceil(Int, 30n / Δt)
@@ -325,23 +325,21 @@ end
 function test_1d_dispersion_antiferromagnet(n, gain=1.0, cutoff=0.0)
     S = zeros(n, 1, 1, 3)
 
-    S[:, :, :, 3] .= 1.0
+    S[1:2:end, :, :, 3] .= 1.0
+    S[2:2:end, :, :, 3] .= -1.0
 
     state = init_state(S)
-    J = -10.0
+    J = -30.0
     dz = 3.0
     Δt = 0.3
     params = setup_params(
-        J, dz, 0.1, (@SVector [0.0, 0.0, 0.0]), Δt, 0.1
+        J, dz, 0.1, (@SVector [0.0, 0.0, -10.0]), Δt, 0.1
     )
 
-    n_steps = ceil(Int, 30n / Δt)
+    n_steps = ceil(Int, 10n / Δt)
     S_hist = @time simulate!(state, params, n_steps, 1)
 
     Sx = @view S_hist[:, 1, :]
-
-    # h/2 = 2067.811956368851 meV * fs
-    f_analytic(k) = (2dz + 2J * (1 - cos(2π * k))) / 2.067811956368851
 
     Sx_fft = @time fftshift(rfft(Sx')', 1)
     k_fft = fftshift(fftfreq(n))
@@ -351,7 +349,10 @@ function test_1d_dispersion_antiferromagnet(n, gain=1.0, cutoff=0.0)
 
     f_ind_range = filter(i -> abs(f_fft[i]) < max_f * 1.5, eachindex(f_fft))
     f_fft = @view f_fft[f_ind_range]
-    Sx_fft = @view Sx_fft[:, f_ind_range]
+
+    k_ind_range = (length(k_fft)÷4):(3*length(k_fft)÷4)
+    k_fft = @view k_fft[k_ind_range]
+    Sx_fft = @view Sx_fft[k_ind_range, f_ind_range]
 
     max_amp = maximum(norm, Sx_fft)
 
