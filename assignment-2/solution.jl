@@ -10,9 +10,9 @@ using Images
 using FFMPEG
 using Random
 using StaticArrays
-using GLMakie
-GLMakie.activate!(title="Assignment-2", framerate=60.0)
-# using CairoMakie
+# using GLMakie
+# GLMakie.activate!(title="Assignment-2", framerate=60.0)
+using CairoMakie
 
 include("hamiltonian.jl")
 include("simulation.jl")
@@ -422,7 +422,7 @@ function make_phase_diagram(n)
     M_means = [0.0 for _ in T_range]
     M_stdds = [0.0 for _ in T_range]
 
-    normal_steps = 10000
+    normal_steps = 100000
     critical_steps = 100 * normal_steps
     critical_temp = 16.0
 
