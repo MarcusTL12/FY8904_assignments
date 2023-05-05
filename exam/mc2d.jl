@@ -90,6 +90,7 @@ function do_mc_draw!(chain, coord_map, interaction_matrix, monomer_types,
     end
 end
 
+# Just do N draws
 function do_mc_sweep!(chain, coord_map, interaction_matrix, monomer_types,
     energy, temperature)
     for _ in 1:length(chain)
