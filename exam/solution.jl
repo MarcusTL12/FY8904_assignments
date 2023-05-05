@@ -11,6 +11,7 @@ include("mc2d.jl")
 include("mc3d.jl")
 include("task1.jl")
 include("task2.jl")
+include("ljp.jl")
 
 # This function initializes the Distributed.jl package with the number of
 # workers requested. If this is not run, the phase diagrams will run single

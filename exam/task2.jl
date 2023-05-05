@@ -111,3 +111,18 @@ function run_2_2_3()
             leg=false, xlabel="T", ylabel="RoG"),
         joinpath(figure_path, "RoG$n.pdf"))
 end
+
+function run_annealing_ljp()
+    interaction_matrix = make_interaction_energy_matrix()
+
+    n = 15
+    monomer_types = rand(1:20, n)
+
+    chain = make_linear_3d_chain(n)
+    coord_map = make_coord_map(chain)
+
+    @time simulate_ljp_annealing(chain, coord_map, interaction_matrix,
+        monomer_types, 100000n, 10, 0.5)
+
+    plot_chain(chain)
+end
